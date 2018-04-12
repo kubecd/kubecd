@@ -80,7 +80,7 @@ class Environment(ttypes.Environment):
             abs_file = resolve_file_path(rel_file, relative_to_file=self._from_file)
             releases = load_yaml_with_schema(abs_file, ttypes.Releases)
             if releases.resourceFiles is not None:
-                abs_files = [resolve_file_path(x, relative_to_file=rel_file) for x in releases.resourceFiles]
+                abs_files = [resolve_file_path(x, relative_to_file=abs_file) for x in releases.resourceFiles]
                 self._all_resource_files.extend(abs_files)
             for rel in releases.releases:
                 self._all_releases.append(Release(rel, from_file=abs_file))
@@ -96,24 +96,10 @@ class Environment(ttypes.Environment):
 
     @property
     def all_releases(self) -> List[Release]:
-        if self._all_releases is None:
-            self._all_releases = []
-            for rel_file in self.releasesFiles:
-                abs_file = resolve_file_path(rel_file, relative_to_file=self._from_file)
-                releases = load_yaml_with_schema(abs_file, ttypes.Releases)
-                for rel in releases.releases:
-                    self._all_releases.append(Release(rel, from_file=abs_file))
         return self._all_releases
 
     @property
     def all_resource_files(self):
-        if self._all_resource_files is None:
-            self._all_resource_files = []
-            for rel_file in self.releasesFiles:
-                abs_file = resolve_file_path(rel_file, relative_to_file=self._from_file)
-                releases = load_yaml_with_schema(abs_file, ttypes.Releases)
-                for res in releases.resourceFiles:
-                    self._all_resource_files.append(res)
         return self._all_resource_files
 
     def init_commands(self, dry_run=False):
@@ -123,10 +109,10 @@ class Environment(ttypes.Environment):
     def deploy_commands(self, dry_run=False) -> List[str]:
         commands = []
         for resource_file in self.all_resource_files:
-            cmd = ['kubectl', '-n', self.kubeNamespace]
+            cmd = ['kubectl', '-n', self.kubeNamespace, 'apply']
             if dry_run:
                 cmd.append('--dry-run')
-            cmd.extend(['apply', '-f', resource_file])
+            cmd.extend(['-f', resource_file])
             commands.append(cmd)
         for release in self._all_releases:
             rel_file = release.from_file
