@@ -14,6 +14,7 @@ def generate_environment_init_command(cluster: Cluster, env: Environment, dry_ru
     if cluster.provider.gke:
         commands.append(['gcloud', 'container', 'clusters', 'get-credentials',
                          '--project', cluster.provider.gke.project,
+                         '--zone', cluster.provider.gke.zone,
                          cluster.provider.gke.clusterName])
         context_name = 'env:' + env.name
         cluster_name = 'gke_{project}_{zone}_{cluster}'.format(project=cluster.provider.gke.project,
