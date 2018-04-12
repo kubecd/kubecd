@@ -7,7 +7,7 @@ requirements = convert_deps_to_pip(pfile['packages'], r=False)
 test_requirements = convert_deps_to_pip(pfile['dev-packages'], r=False)
 setup(
     name='kubecd',
-    version='0.2',
+    version='0.3',
     description='Kubernetes Continuous Deployment and Inventory Tool',
     url='http://github.com/zedge/kubecd',
     author='Stig Bakken',
