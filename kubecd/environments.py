@@ -1,4 +1,4 @@
-import yaml
+import ruamel.yaml
 import re
 import subprocess
 from collections import defaultdict
@@ -46,7 +46,7 @@ class Release(ttypes.Release):
             # "helm inspect" outputs a two-document yaml block, where the second is the parsed default values.yaml
             cmd = ['helm', 'inspect', self.chart.reference, '--version', self.chart.version]
             output = subprocess.check_output(cmd).decode('utf-8').split("\n---\n")[1]
-            chart_default_values = yaml.load(output)
+            chart_default_values = ruamel.yaml.safe_load(output)
             values = merge_values(from_dict=chart_default_values, onto_dict=values)
         if len(for_env.defaultValues) > 0:
             default_values = values_list_to_dict(for_env.defaultValues, for_env)
@@ -264,10 +264,17 @@ def merge_values(from_dict: dict, onto_dict: dict) -> dict:
 
 def load_values_file(file_name: str) -> dict:
     with open(file_name) as f:
-        return yaml.load(f)
+        return ruamel.yaml.safe_load(f)
 
 
 def values_list_to_dict(values: List[ttypes.ChartValue], env: Environment) -> dict:
+    """
+    Convert a list of ChartValue objects with keys on the form ``"foo.bar"``
+    to a nested dictionary like ``{"foo": {"bar": ...}}``.
+    :param values: list of ChartValue objects
+    :param env: current environment
+    :return:
+    """
     def val_to_dict(key: List[str], value) -> dict:
         if len(key) == 1:
             return {key[0]: value}

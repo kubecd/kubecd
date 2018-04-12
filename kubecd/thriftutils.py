@@ -3,9 +3,9 @@ from thrift.Thrift import TType
 
 def load_yaml_with_schema(yaml_file: str, schema):
     with open(yaml_file, 'r') as fd:
-        import yaml
+        from ruamel import yaml
         try:
-            return to_thrift_object(yaml.load(fd), schema, '')
+            return to_thrift_object(yaml.safe_load(fd), schema, '')
         except ValueError as e:
             print(e.args)
             raise ValueError('in file {}: {}'.format(yaml_file, str(e))) from e

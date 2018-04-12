@@ -29,7 +29,8 @@ struct GithubTrigger {
 struct ImageTrigger {
     1: optional string tagValue = "image.tag";
     2: optional string repoValue = "image.value";
-    3: optional string track = "Newest"; // PatchLevel, MinorVersion, MajorVersion, Newest
+    3: optional string repoPrefixValue = "image.prefix";
+    4: optional string track = "Newest"; // PatchLevel, MinorVersion, MajorVersion, Newest
 }
 
 union DeploymentTrigger {
