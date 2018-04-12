@@ -115,7 +115,7 @@ def dump_envs(ctx, env_name=None):
 
 @main.command(name='check-updates', help='check for image updates')
 @click.argument('ENV_NAME', required=False)
-@click.option('--patch', is_flag=True)
+@click.option('--patch', is_flag=True, help='patch release files with new tags')
 @click.pass_context
 def check_updates(ctx, env_name=None, patch=False):
     for environment in one_or_more_envs(env_name, ctx.obj['environments_file']):
