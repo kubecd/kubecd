@@ -1,9 +1,10 @@
 import json
 import os
 from typing import Dict
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
+
 from .. import updates as sut
 
 TEST_DOCKER_HUB_TAGS_URL = 'https://registry.hub.docker.com/v2/repositories/confluentinc/cp-kafka/tags?page_size=256'

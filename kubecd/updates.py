@@ -1,15 +1,14 @@
 import json
 import re
 import subprocess
+import time
+from collections import defaultdict
 from typing import Tuple, Dict, List
 
 import requests
 import semver
-import time
 
-from collections import defaultdict
-
-from kubecd.environments import Environment, key_is_in_values, lookup_value
+from .environments import Environment, key_is_in_values, lookup_value
 
 
 def parse_docker_timestamp(timestamp: str) -> int:
