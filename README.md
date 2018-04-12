@@ -64,6 +64,10 @@ for how to configure Pip to fetch packages from our private repo):
 
 ## Contributing
 
+### Design Document
+
+[Can be found here.](docs/design.md)
+
 ### Running From Source
 
 This project requires `pipenv`, Python 3.5 and Docker. You must install `pipenv` yourself before installing
