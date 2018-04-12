@@ -2,7 +2,7 @@ THRIFT_IMAGE=thrift:0.11
 
 DEPLOYMENTS_GEN_FILE=kubecd/gen_py/ttypes.py
 DEPLOYMENTS_SRC_FILE=idl/github.com/zedge/kubecd/kubecd.thrift
-GEN_DIR=kubecd/gen_py
+GEN_DIR=.
 
 THRIFT_GEN=docker run --rm -v $(shell pwd):$(shell pwd) -w $(shell pwd) -u $(shell id -u):$(shell id -g) $(THRIFT_IMAGE) thrift -out $(GEN_DIR) -gen py:dynamic
 

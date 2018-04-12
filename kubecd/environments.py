@@ -7,7 +7,7 @@ from typing import List, Union
 from .thriftutils import load_yaml_with_schema
 from .utils import resolve_file_path
 from .providers import generate_environment_init_command
-from .gen_py.zedge.deployments import ttypes
+from .gen_py import ttypes
 from os import path
 
 _environments = None

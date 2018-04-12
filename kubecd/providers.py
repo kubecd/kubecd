@@ -1,6 +1,6 @@
 from typing import List
 
-from .gen_py.zedge.deployments.ttypes import Environment, Cluster
+from .gen_py.ttypes import Environment, Cluster
 
 
 def generate_environment_init_command(cluster: Cluster, env: Environment, dry_run: bool = False) -> List[List[str]]:
