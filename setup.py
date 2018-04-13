@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='kubecd',
-    version='0.6',
+    version='0.7',
     description='Kubernetes Continuous Deployment and Inventory Tool',
     url='http://github.com/zedge/kubecd',
     author='Stig Bakken',

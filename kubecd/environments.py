@@ -109,7 +109,7 @@ class Environment(ttypes.Environment):
     def deploy_commands(self, dry_run=False) -> List[str]:
         commands = []
         for resource_file in self.all_resource_files:
-            cmd = ['kubectl', '-n', self.kubeNamespace, 'apply']
+            cmd = ['kubectl', '--context', 'env:' + self.name, 'apply']
             if dry_run:
                 cmd.append('--dry-run')
             cmd.extend(['-f', resource_file])

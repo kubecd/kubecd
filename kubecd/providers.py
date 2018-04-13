@@ -24,5 +24,4 @@ def generate_environment_init_command(cluster: Cluster, env: Environment, dry_ru
                          '--cluster', cluster_name,
                          '--user', cluster_name,
                          '--namespace', env.kubeNamespace])
-        commands.append(['kubectl', 'config', 'use-context', context_name])
     return commands
