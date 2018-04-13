@@ -208,7 +208,7 @@ def generate_helm_command_argv(rel: Release, env: Environment, release_file: str
         if not path.exists(chart_arg):
             raise ValueError('{}: release "{}" chart.dir "{}" does not exist'.format(
                 release_file, rel.name, chart_arg))
-    argv = ['helm', 'upgrade', rel.name, chart_arg, '-i']
+    argv = ['helm', '--kube-context', 'env:' + env.name, 'upgrade', rel.name, chart_arg, '-i']
     if dry_run:
         argv.append('--dry-run')
     if env.defaultValuesFile:

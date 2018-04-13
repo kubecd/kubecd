@@ -47,7 +47,7 @@ def get_tags_for_gcr_image(registry: str, repo: str) -> Dict[str, int]:
         else:
             timestamp = 0
         if 'tags' in img_tag:
-            print(img_tag)
+            # print(img_tag)
             for tag in img_tag['tags']:
                 response[tag] = timestamp
     return response
@@ -130,6 +130,12 @@ def find_updates_for_env(environment: Environment):
             prefix_value = release.trigger.image.repoPrefixValue
             track = release.trigger.image.track
             values = release.get_resolved_values(for_env=environment)
+            # print('found trigger for image "{image}" from value "{value}": {trigger}\nvalues: {values}'.format(
+            #     image=lookup_value(repo_value, values),
+            #     trigger=release.trigger,
+            #     value=tag_value,
+            #     values=values,
+            # ))
             if key_is_in_values(repo_value, values):
                 image_repo = lookup_value(repo_value, values)
                 if key_is_in_values(prefix_value, values):

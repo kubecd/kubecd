@@ -135,7 +135,7 @@ def check_updates(ctx, env_name=None, patch=False):
             if patch:
                 mod_yaml = load_yaml(release_file)
             for update in updates[release_file]:
-                click.echo('\t{file}: release "{release}" image "{image}" tag "{tag_value}" {tag_from} -> {tag_to}'.format(
+                click.echo('{file}: release "{release}" image "{image}" tag "{tag_value}" {tag_from} -> {tag_to}'.format(
                     file=release_file,
                     release=update['release'],
                     image=update['image_repo'],
