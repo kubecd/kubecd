@@ -1,8 +1,16 @@
+import os
+
 from setuptools import setup, find_packages
+
+module_path = os.path.join(os.path.dirname(__file__), 'kubecd', '__init__.py')
+version_line = [line for line in open(module_path)
+                if line.startswith('__version__')][0]
+
+__version__ = version_line.split('__version__ = ')[-1][1:][:-2]
 
 setup(
     name='kubecd',
-    version='0.7',
+    version=__version__,
     description='Kubernetes Continuous Deployment and Inventory Tool',
     url='http://github.com/zedge/kubecd',
     author='Stig Bakken',

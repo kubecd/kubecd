@@ -9,14 +9,24 @@ import ruamel.yaml.error
 
 from kubecd.updates import find_updates_for_env
 from .. import environments
+from .. import __version__
+
+
+def print_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo('kubecd version ' + __version__)
+    ctx.exit()
 
 
 @click.group()
 @click.option('--environments-file', '-f',
               envvar='KCD_ENVIRONMENTS',
-              type=click.Path(exists=True),
+              type=click.Path(),
               help='Your environments.yaml file',
               default='environments.yaml')
+@click.option('--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True,
+              help='Show version and exit.')
 @click.pass_context
 def main(ctx, environments_file):
     ctx.obj = {
