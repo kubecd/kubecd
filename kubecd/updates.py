@@ -108,7 +108,7 @@ def filter_semver_tags(tags: List[str]) -> List[str]:
 
 def filter_candidate_tags(tag: str, tags: Dict[str, int], track: str):
     if track == 'Newest':
-        return tags.keys()
+        return [x for x in tags.keys() if x != 'latest']
     candidates = filter_semver_tags(list(tags.keys()))
     if track == 'PatchLevel':
         ver_le = '<' + semver.bump_minor(tag)
@@ -142,10 +142,10 @@ def find_updates_for_env(environment: Environment):
                     image_repo = lookup_value(prefix_value, values) + image_repo
                 image_tag = lookup_value(tag_value, values)
                 all_tags = get_tags_for_image(image_repo)
-                tag_timestamp = all_tags[image_tag]
+                tag_timestamp = all_tags[image_tag] if image_tag in all_tags else 0
                 updated_tag = None
                 for candidate in filter_candidate_tags(image_tag, all_tags, track):
-                    if all_tags[candidate] > tag_timestamp:
+                    if candidate in all_tags and all_tags[candidate] > tag_timestamp:
                         tag_timestamp = all_tags[candidate]
                         updated_tag = candidate
                 if updated_tag is not None:
