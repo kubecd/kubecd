@@ -1,9 +1,14 @@
 namespace py kubecd.gen_py
 
 
+struct NameFromRef {
+    1: optional string clusterParam;
+}
+
 struct GceAddressValueRef {
-    1: required string name;
-    2: optional bool isGlobal; // if false, use zone from environment
+    1: optional string name;
+    2: optional NameFromRef nameFrom;
+    3: optional bool isGlobal; // if false, use zone from environment
 }
 
 union GceValueRef {
@@ -15,7 +20,7 @@ struct ChartValueRef {
 }
 
 struct ChartValue {
-    1: required string key;
+    1: optional string key;
     2: optional string value;
     3: optional ChartValueRef valueFrom;
 }
@@ -45,45 +50,55 @@ struct Chart {
 }
 
 struct Release {
-    1: required string name;
+    1: optional string name;
     2: optional Chart chart;
     3: optional string valuesFile;
     4: optional list<ChartValue> values;
     5: optional DeploymentTrigger trigger;
 }
 
-struct ResourceRef {
-    1: required string kind;
-    2: required string name;  // optionally with a "namespace/" prefix
+struct KubernetesResourceRef {
+    1: optional string kind;
+    2: optional string name;  // optionally with a "namespace/" prefix
 }
 
 struct Releases {
     1: optional list<string> resourceFiles;
     2: optional list<Release> releases;
-    3: optional list<ResourceRef> resourceDependencies;
+    3: optional list<KubernetesResourceRef> resourceDependencies;
 }
 
 struct GkeProvider {
-    1: required string project;
-    2: required string clusterName;
+    1: optional string project;
+    2: optional string clusterName;
     3: optional string zone;
+}
+
+struct MinikubeProvider {
 }
 
 union Provider {
     1: optional GkeProvider gke;
+    2: optional MinikubeProvider minikube;
+}
+
+struct ClusterParameter {
+    1: optional string name;
+    2: optional string value;
 }
 
 struct Cluster {
-    1: required string name;
-    2: required Provider provider;
+    1: optional string name;
+    2: optional Provider provider;
+    3: optional list<ClusterParameter> parameters;
 }
 
 struct Environment {
-    1: required string name;
+    1: optional string name;
 
-    2: required string clusterName;
+    2: optional string clusterName;
 
-    3: required string kubeNamespace;
+    3: optional string kubeNamespace;
 
     /** a list of `releases.yaml` files */
     4: optional list<string> releasesFiles;
@@ -96,6 +111,6 @@ struct Environment {
 }
 
 struct Environments {
-    1: required list<Cluster> clusters;
-    2: required list<Environment> environments;
+    1: optional list<Cluster> clusters;
+    2: optional list<Environment> environments;
 }

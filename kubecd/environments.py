@@ -69,7 +69,7 @@ class Environment(ttypes.Environment):
     # _all_resource_files: List[str]
 
     def __init__(self, data: ttypes.Environment, from_file: str):
-        self._from_file = from_file
+        self._from_file = path.abspath(from_file)
         self._all_releases = []
         self._all_resource_files = []
         super(Environment, self).__init__(**data.__dict__)
