@@ -1,9 +1,8 @@
 import json
-import re
 import subprocess
-import time
 from collections import defaultdict
 from typing import Tuple, Dict, List
+import dateutil.parser
 
 import requests
 import semver
@@ -18,7 +17,7 @@ def parse_docker_timestamp(timestamp: str) -> int:
     :param timestamp:
     :return: unix timestamp (seconds since 1970-01-01 00:00:00 UTC)
     """
-    return int(time.mktime(time.strptime(timestamp[:19], '%Y-%m-%dT%H:%M:%S')))
+    return int(dateutil.parser.parse(timestamp).timestamp())
 
 
 def parse_image_repo(repo: str) -> Tuple[str, str]:
@@ -42,8 +41,7 @@ def get_tags_for_gcr_image(registry: str, repo: str) -> Dict[str, int]:
     response = {}
     for img_tag in gcr_response:
         if 'timestamp' in img_tag:
-            datetime = re.sub(r'\+(\d\d):(\d\d)$', r'+\1\2', img_tag['timestamp']['datetime'])
-            timestamp = int(time.mktime(time.strptime(datetime, '%Y-%m-%d %H:%M:%S%z')))
+            timestamp = parse_docker_timestamp(img_tag['timestamp']['datetime'])
         else:
             timestamp = 0
         if 'tags' in img_tag:

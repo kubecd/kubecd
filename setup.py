@@ -17,7 +17,14 @@ setup(
     author_email='stig@zedge.net',
     license='Apache 2',
     packages=find_packages(),
-    install_requires=['thrift', 'ruamel.yaml', 'semver', 'requests', 'click'],
+    install_requires=[
+        'thrift==0.11.0',
+        'ruamel.yaml~=0.15.37',
+        'semver~=2.7.9',
+        'requests~=2.18.4',
+        'click~=6.7',
+        'python-dateutil'
+    ],
     tests_require=['pytest', 'pytest-cov'],
     entry_points={
         'console_scripts': [
