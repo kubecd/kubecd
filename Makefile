@@ -28,4 +28,6 @@ image-push: image
 	docker push $(KCD_IMAGE):$(KCD_IMAGE_TAG)
 
 clean:
-	rm -rf $(GEN_SUBDIR)
+	rm -rf $(GEN_SUBDIR) $(shell find . \( -name __pycache__ -o -name \*.pyc \) -print)
+	python setup.py clean
+
