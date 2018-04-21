@@ -2,7 +2,6 @@
 FROM thrift:0.11 AS thrift
 COPY idl/ /idl
 RUN mkdir /gen_py && thrift -out /gen_py -gen py:dynamic idl/github.com/zedge/kubecd/kubecd.thrift
-RUN ls -Rl /gen_py
 
 # Run tests and install package
 FROM python:3.5-alpine
