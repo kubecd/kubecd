@@ -19,3 +19,5 @@ RUN cd /tmp/kubecd \
  && pip install . \
  && cd / \
  && rm -rf /tmp/kubecd
+
+ENTRYPOINT ["/usr/local/bin/kcd"]
