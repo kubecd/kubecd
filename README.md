@@ -75,21 +75,23 @@ project dependencies. See [pipenv install docs](https://docs.pipenv.org/install/
 
 Then you need to generated Thrift source and install a shim that runs directly from your checked out source:
 
-    make
     pip install -e .
+    make
+    kcd --help
 
 ### Testing
 
-To run tests, run `pipenv install -d` to install dev packages, and run `make test`:
+To run tests, first install test dependencies:
 
-    pipenv install -d
+    pip install -e .
+    pip install -r requirements-test.txt
     make test
 
 ### Making Releases
 
 To make a new release:
 
- 1. update the `version` parameter in [`setup.py`](setup.py)
- 2. create and push a git tag `vN.N` (with a clean repo!)
- 3. run `python setup.py clean sdist upload -r jfrog`
-
+ 1. commit and push all changes
+ 2. update the `__version__` attribute in [`kubecd/__init__.py`](kubecd/__init__.py)
+ 3. run `python setup.py release` - this will make a Git tag and push, which will kick off the actual
+    release process driven by `cloudbuild-release.yaml`

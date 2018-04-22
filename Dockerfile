@@ -2,6 +2,7 @@
 FROM thrift:0.11 AS thrift
 COPY idl/ /idl
 RUN mkdir /gen_py && thrift -out /gen_py -gen py:dynamic idl/github.com/zedge/kubecd/kubecd.thrift
+ARG PYPI_UPLOAD_URL=""
 
 # Run tests and install package
 FROM python:3.5-alpine
@@ -15,8 +16,9 @@ RUN cd /tmp/kubecd \
  && pytest \
  && pip uninstall -y -r requirements-test.txt \
  && python setup.py sdist \
- && ver=`python setup.py --version`; pip install dist/kubecd-$ver.tar.gz \
- && pip install . \
+ && ver=`python setup.py --version`; \
+ && pip install dist/kubecd-$ver.tar.gz \
+ && if [ -n "${PYPI_UPLOAD_URL}" ]; then python setup.py upload -r "${PYPI_UPLOAD_URL}"; fi \
  && cd / \
  && rm -rf /tmp/kubecd
 

@@ -1,0 +1,17 @@
+secrets:
+  - kmsKeyName: "projects/zedge-dev/locations/global/keyRings/zedge-ci/cryptoKeys/deploy-secrets-key"
+    secretEnv:
+      JFROG_API_KEY: "CiQASRu7a6SfTv4W1Xxn743AEC6rBxBFWODMDnAnqGc1++Kfj64ScgAS+vr0L8B8M+jJNwmv3VRLhPdnBTDNvodFlrqMpgUxaPdHkfnw7SV7iInvj3iHLOJ1e+rJWA+O/UF1vOaBm0TmATpAGG4My4Vq7/IP495uGoVi+2Yjv+ykhP6A1Iu4d6FVRyNehNYuQnq6VQ2fUc9riA=="
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-t"
+      - "us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME"
+      - "--build-arg"
+      - "PYPI_UPLOAD_URL=https://zedge-ci@${JFROG_API_KEY}@zedge2.jfrog.io/zedge2/api/pypi/python/simple"
+      - "."
+
+images:
+  - "us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME"

@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Command
 
 module_path = os.path.join(os.path.dirname(__file__), 'kubecd', '__init__.py')
 version_line = [line for line in open(module_path)
@@ -8,9 +8,39 @@ version_line = [line for line in open(module_path)
 
 __version__ = version_line.split('__version__ = ')[-1][1:][:-2]
 
+
+class ReleaseCommand(Command):
+    """ Run my command.
+    """
+    description = 'tag a new release'
+    version = None
+    user_options = [
+        ('version=', 'v', 'new version'),
+    ]
+
+    def initialize_options(self):
+        self.version = None
+
+    def finalize_options(self):
+        if self.version is None:
+            self.version = __version__
+
+    def run(self):
+        import subprocess
+        print("Tagging v%s ..." % self.version)
+        if subprocess.call(["git", "tag", "v%s" % self.version]) != 0:
+            raise Exception("'git tag' command failed")
+        print("Pushing tags ..." % self.version)
+        if subprocess.call(["git", "push", "--tags"]) != 0:
+            raise Exception("'git push --tags' command failed")
+
+
 setup(
     name='kubecd',
     version=__version__,
+    cmdclass={
+        'release': ReleaseCommand
+    },
     description='Kubernetes Continuous Deployment and Inventory Tool',
     url='http://github.com/zedge/kubecd',
     author='Stig Bakken',
