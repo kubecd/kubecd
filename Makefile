@@ -11,7 +11,7 @@ KCD_IMAGE=us.gcr.io/zedge-dev/kubecd
 KCD_IMAGE_TAG=latest
 
 all: thrift-gen
-.PHONY: thrift-gen test image image-push clean test check
+.PHONY: thrift-gen test image image-push clean test release
 
 thrift-gen: $(KUBECD_GEN_FILE)
 
@@ -30,3 +30,6 @@ clean:
 
 test: thrift-gen
 	pytest
+
+release: clean test
+	python setup.py release
