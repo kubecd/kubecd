@@ -13,7 +13,7 @@ steps:
       - "PYPI_UPLOAD_URL=https://zedge-ci@${_JFROG_API_KEY}@zedge2.jfrog.io/zedge2/api/pypi/python/simple"
       - "."
     secretEnv:
-      - "JFROG_API_KEY"
+      - "_JFROG_API_KEY"
 
 images:
   - "us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME"
