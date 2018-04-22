@@ -16,7 +16,7 @@ RUN cd /tmp/kubecd \
  && pytest \
  && pip uninstall -y -r requirements-test.txt \
  && python setup.py sdist \
- && ver=`python setup.py --version`; \
+ && ver=`python setup.py --version` \
  && pip install dist/kubecd-$ver.tar.gz \
  && if [ -n "${PYPI_UPLOAD_URL}" ]; then python setup.py upload -r "${PYPI_UPLOAD_URL}"; fi \
  && cd / \
