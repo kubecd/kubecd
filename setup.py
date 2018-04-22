@@ -30,7 +30,7 @@ class ReleaseCommand(Command):
         print("Tagging v%s ..." % self.version)
         if subprocess.call(["git", "tag", "v%s" % self.version]) != 0:
             raise Exception("'git tag' command failed")
-        print("Pushing tags ..." % self.version)
+        print("Pushing tags ...")
         if subprocess.call(["git", "push", "--tags"]) != 0:
             raise Exception("'git push --tags' command failed")
 
