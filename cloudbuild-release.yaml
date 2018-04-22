@@ -10,7 +10,7 @@ steps:
       - "-t"
       - "us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME"
       - "--build-arg"
-      - "PYPI_UPLOAD_URL=https://zedge-ci@${_JFROG_API_KEY}@zedge2.jfrog.io/zedge2/api/pypi/python/simple"
+      - "PYPI_UPLOAD_URL=https://zedge-ci:${_JFROG_API_KEY}@zedge2.jfrog.io/zedge2/api/pypi/python/simple"
       - "."
     secretEnv:
       - "_JFROG_API_KEY"
