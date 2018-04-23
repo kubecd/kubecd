@@ -16,10 +16,12 @@ class ReleaseCommand(Command):
     version = None
     user_options = [
         ('version=', 'v', 'new version'),
+        ('force', 'f', 'force push version tag')
     ]
 
     def initialize_options(self):
         self.version = None
+        self.force = False
 
     def finalize_options(self):
         if self.version is None:
@@ -27,11 +29,18 @@ class ReleaseCommand(Command):
 
     def run(self):
         import subprocess
-        print("Tagging v%s ..." % self.version)
-        if subprocess.call(["git", "tag", "v%s" % self.version]) != 0:
+        tag = 'v' + self.version
+        push_cmd = ["git", "push", "--tags"]
+        if self.force:
+            push_cmd.append("-f")
+            print("Untagging %s ..." % tag)
+            if subprocess.call(["git", "tag", "-d", tag]) != 0:
+                raise Exception("'git untag' command failed")
+        print("Tagging %s ..." % tag)
+        if subprocess.call(["git", "tag", tag]) != 0:
             raise Exception("'git tag' command failed")
         print("Pushing tags ...")
-        if subprocess.call(["git", "push", "--tags"]) != 0:
+        if subprocess.call(push_cmd) != 0:
             raise Exception("'git push --tags' command failed")
 
 
