@@ -5,9 +5,18 @@ from typing import Tuple, Dict, List
 import dateutil.parser
 
 import requests
-import semver
+import semantic_version
 
 from .environments import Environment, key_is_in_values, lookup_value
+
+
+def semver_normalize(version: str):
+    return version[1:] if version.startswith('v') else version
+
+
+def semver_parse(version: str) -> semantic_version.Version:
+    version = semver_normalize(version)
+    return semantic_version.Version(version, partial=True)
 
 
 def parse_docker_timestamp(timestamp: str) -> int:
@@ -96,27 +105,36 @@ def filter_semver_tags(tags: List[str]) -> List[str]:
     """
     output = []
     for tag in tags:
-        try:
-            semver.parse(tag)
+        if semantic_version.validate(semver_normalize(tag)):
             output.append(tag)
-        except ValueError:
-            pass
     return output
 
 
-def filter_candidate_tags(tag: str, tags: Dict[str, int], track: str):
+def get_newest_matching_tag(tag: str, tags: Dict[str, int], track: str, tag_timestamp: int = 0):
     if track == 'Newest':
-        return [x for x in tags.keys() if x != 'latest']
-    candidates = filter_semver_tags(list(tags.keys()))
+        # filter out tags that are not newer than the current one, and ignore "latest"
+        tags = {k: v for k, v in tags.items() if k != 'latest' and v > tag_timestamp}
+        sorted_tags = sorted(tags, key=tags.__getitem__, reverse=True)  # sort by descending timestamp
+        return sorted_tags[0] if len(sorted_tags) > 0 else None
+    # If not "Newest", it is one of the semver variants
+    candidates = filter_semver_tags(list(tags.keys()))  # filter out non-semver tags
+    versions = {semver_parse(v): v for v in candidates}
+    current = semver_parse(tag)
+    norm_tag = semver_normalize(tag)
     if track == 'PatchLevel':
-        ver_le = '<' + semver.bump_minor(tag)
-        return filter(lambda x: semver.match(x, ver_le), candidates)
-    if track == 'MinorVersion':
-        ver_le = '<' + semver.bump_major(tag)
-        return filter(lambda x: semver.match(x, ver_le), candidates)
-    if track == 'MajorVersion':
-        return candidates
-    raise ValueError('unsupported "track": {track}'.format(track=track))
+        spec = semantic_version.Spec('>{current},<{next_minor}'.format(current=norm_tag,
+                                                                       next_minor=str(current.next_minor())))
+    elif track == 'MinorVersion':
+        spec = semantic_version.Spec('>{current},<{next_major}'.format(current=norm_tag,
+                                                                       next_major=str(current.next_major())))
+    elif track == 'MajorVersion':
+        spec = semantic_version.Spec('>{current}'.format(current=norm_tag))
+    else:
+        raise ValueError('unsupported "track": {track}'.format(track=track))
+    best = spec.select(versions.keys())
+    if best is None:
+        return None
+    return versions[best]
 
 
 def find_updates_for_env(environment: Environment):
@@ -141,11 +159,7 @@ def find_updates_for_env(environment: Environment):
                 image_tag = lookup_value(tag_value, values)
                 all_tags = get_tags_for_image(image_repo)
                 tag_timestamp = all_tags[image_tag] if image_tag in all_tags else 0
-                updated_tag = None
-                for candidate in filter_candidate_tags(image_tag, all_tags, track):
-                    if candidate in all_tags and all_tags[candidate] > tag_timestamp:
-                        tag_timestamp = all_tags[candidate]
-                        updated_tag = candidate
+                updated_tag = get_newest_matching_tag(image_tag, all_tags, track, tag_timestamp)
                 if updated_tag is not None:
                     updates[release.from_file].append({
                         'old_tag': image_tag,

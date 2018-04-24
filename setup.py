@@ -59,7 +59,7 @@ setup(
     install_requires=[
         'thrift==0.11.0',
         'ruamel.yaml~=0.15.37',
-        'semver~=2.7.9',
+        'semantic_version~=2.6.0',
         'requests~=2.18.4',
         'click~=6.7',
         'python-dateutil'
