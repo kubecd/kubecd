@@ -16,7 +16,7 @@ def semver_normalize(version: str):
 
 def semver_parse(version: str) -> semantic_version.Version:
     version = semver_normalize(version)
-    return semantic_version.Version(version, partial=True)
+    return semantic_version.Version.coerce(version)
 
 
 def parse_docker_timestamp(timestamp: str) -> int:
@@ -118,8 +118,10 @@ def get_newest_matching_tag(tag: str, tags: Dict[str, int], track: str, tag_time
         return sorted_tags[0] if len(sorted_tags) > 0 else None
     # If not "Newest", it is one of the semver variants
     candidates = filter_semver_tags(list(tags.keys()))  # filter out non-semver tags
-    versions = [semver_parse(v) for v in candidates]
-    tag_map = {str(v): v for v in versions}
+    versions = {}
+    for v in candidates:
+        parsed = semver_parse(v)
+        versions[parsed] = v
     current = semver_parse(tag)
     norm_tag = semver_normalize(tag)
     if track == 'PatchLevel':
@@ -132,10 +134,10 @@ def get_newest_matching_tag(tag: str, tags: Dict[str, int], track: str, tag_time
         spec = semantic_version.Spec('>{current}'.format(current=norm_tag))
     else:
         raise ValueError('unsupported "track": {track}'.format(track=track))
-    best = spec.select(versions)
+    best = spec.select(versions.keys())
     if best is None:
         return None
-    return tag_map[str(best)]
+    return versions[best]
 
 
 def find_updates_for_env(environment: Environment):
