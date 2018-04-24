@@ -118,23 +118,24 @@ def get_newest_matching_tag(tag: str, tags: Dict[str, int], track: str, tag_time
         return sorted_tags[0] if len(sorted_tags) > 0 else None
     # If not "Newest", it is one of the semver variants
     candidates = filter_semver_tags(list(tags.keys()))  # filter out non-semver tags
-    versions = {semver_parse(v): v for v in candidates}
+    versions = [semver_parse(v) for v in candidates]
+    tag_map = {str(v): v for v in versions}
     current = semver_parse(tag)
     norm_tag = semver_normalize(tag)
     if track == 'PatchLevel':
-        spec = semantic_version.Spec('>{current}-,<{next_minor}'.format(current=norm_tag,
-                                                                        next_minor=str(current.next_minor())))
+        spec = semantic_version.Spec('>{current},<{next_minor}'.format(current=norm_tag,
+                                                                       next_minor=str(current.next_minor())))
     elif track == 'MinorVersion':
-        spec = semantic_version.Spec('>{current}-,<{next_major}'.format(current=norm_tag,
-                                                                        next_major=str(current.next_major())))
+        spec = semantic_version.Spec('>{current},<{next_major}'.format(current=norm_tag,
+                                                                       next_major=str(current.next_major())))
     elif track == 'MajorVersion':
         spec = semantic_version.Spec('>{current}'.format(current=norm_tag))
     else:
         raise ValueError('unsupported "track": {track}'.format(track=track))
-    best = spec.select(versions.keys())
+    best = spec.select(versions)
     if best is None:
         return None
-    return versions[best]
+    return tag_map[str(best)]
 
 
 def find_updates_for_env(environment: Environment):

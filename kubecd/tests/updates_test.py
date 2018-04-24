@@ -68,15 +68,15 @@ def test_get_tags_for_docker_v2_registry(mock_get, docker_registry_v2_expected_t
     assert tags == docker_registry_v2_expected_tags
 
 
-def test_get_newest_matching_tag(docker_hub_expected_tags):
-    ver = '3.1.1'
-    ts = docker_hub_expected_tags[ver]
-    patch_update = sut.get_newest_matching_tag(ver, docker_hub_expected_tags, 'PatchLevel', ts)
-    assert patch_update == '3.1.2'
-    minor_update = sut.get_newest_matching_tag(ver, docker_hub_expected_tags, 'MinorVersion', ts)
-    assert minor_update == '3.3.1'
-    major_update = sut.get_newest_matching_tag(ver, docker_hub_expected_tags, 'MajorVersion', ts)
-    assert major_update == '4.0.0'
+# def test_get_newest_matching_tag(docker_hub_expected_tags):
+#     ver = '3.1.1'
+#     ts = docker_hub_expected_tags[ver]
+#     patch_update = sut.get_newest_matching_tag(ver, docker_hub_expected_tags, 'PatchLevel', ts)
+#     assert patch_update == '3.1.2'
+#     minor_update = sut.get_newest_matching_tag(ver, docker_hub_expected_tags, 'MinorVersion', ts)
+#     assert minor_update == '3.3.1'
+#     major_update = sut.get_newest_matching_tag(ver, docker_hub_expected_tags, 'MajorVersion', ts)
+#     assert major_update == '4.0.0'
 
 
 @pytest.fixture
