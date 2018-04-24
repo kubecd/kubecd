@@ -122,11 +122,11 @@ def get_newest_matching_tag(tag: str, tags: Dict[str, int], track: str, tag_time
     current = semver_parse(tag)
     norm_tag = semver_normalize(tag)
     if track == 'PatchLevel':
-        spec = semantic_version.Spec('>{current},<{next_minor}'.format(current=norm_tag,
-                                                                       next_minor=str(current.next_minor())))
+        spec = semantic_version.Spec('>{current}-,<{next_minor}'.format(current=norm_tag,
+                                                                        next_minor=str(current.next_minor())))
     elif track == 'MinorVersion':
-        spec = semantic_version.Spec('>{current},<{next_major}'.format(current=norm_tag,
-                                                                       next_major=str(current.next_major())))
+        spec = semantic_version.Spec('>{current}-,<{next_major}'.format(current=norm_tag,
+                                                                        next_major=str(current.next_major())))
     elif track == 'MajorVersion':
         spec = semantic_version.Spec('>{current}'.format(current=norm_tag))
     else:

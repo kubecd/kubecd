@@ -2,8 +2,8 @@
 .git
 .idea
 .pytest_cache
-__pycache__
+**/__pycache__
 build
 dist
 *.egg-info
-*.pyc
+**/*.pyc
