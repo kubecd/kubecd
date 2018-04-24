@@ -4,16 +4,33 @@ secrets:
       JFROG_API_KEY: "CiQASRu7a6SfTv4W1Xxn743AEC6rBxBFWODMDnAnqGc1++Kfj64ScgAS+vr0L8B8M+jJNwmv3VRLhPdnBTDNvodFlrqMpgUxaPdHkfnw7SV7iInvj3iHLOJ1e+rJWA+O/UF1vOaBm0TmATpAGG4My4Vq7/IP495uGoVi+2Yjv+ykhP6A1Iu4d6FVRyNehNYuQnq6VQ2fUc9riA=="
 
 steps:
+  # build kubecd image
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "build"
       - "-t"
       - "us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME"
-      - "--build-arg"
-      - "PYPI_UPLOAD_URL=https://zedge-ci:$$JFROG_API_KEY@zedge2.jfrog.io/zedge2/api/pypi/python/simple"
       - "."
-    secretEnv:
-      - "JFROG_API_KEY"
+  # deploy python artifact
+  - name: "gcr.io/cloud-builders/docker"
+    secretEnv: ["JFROG_API_KEY"]
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        tag="$TAG_NAME"
+        ver="$${tag#v}"
+        image=us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME
+        docker run --rm --entrypoint=/bin/cat $$image /tmp/kubecd-$$ver.tar.gz > kubecd-$$ver.tar.gz
+        tar xvzf kubecd-$$ver.tar.gz
+        mkdir ~/.pip
+        cat > ~/.pip/pip.conf << EOF
+        [global]
+        extra-index-url = https://zedge-ci:$$JFROG_API_KEY@zedge2.jfrog.io/zedge2/api/pypi/python/simple
+        trusted-host = zedge2.jfrog.io
+        EOF
+        cd kubecd-$$ver
+        python3 setup.py sdist upload -r jfrog
 
 images:
   - "us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME"
