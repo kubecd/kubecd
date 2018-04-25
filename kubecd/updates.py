@@ -7,16 +7,8 @@ import dateutil.parser
 import requests
 import semantic_version
 
+from . import semver
 from .environments import Environment, key_is_in_values, lookup_value
-
-
-def semver_normalize(version: str):
-    return version[1:] if version.startswith('v') else version
-
-
-def semver_parse(version: str) -> semantic_version.Version:
-    version = semver_normalize(version)
-    return semantic_version.Version.coerce(version)
 
 
 def parse_docker_timestamp(timestamp: str) -> int:
@@ -105,7 +97,7 @@ def filter_semver_tags(tags: List[str]) -> List[str]:
     """
     output = []
     for tag in tags:
-        if semantic_version.validate(semver_normalize(tag)):
+        if semantic_version.validate(semver.normalize(tag)):
             output.append(tag)
     return output
 
@@ -120,21 +112,10 @@ def get_newest_matching_tag(tag: str, tags: Dict[str, int], track: str, tag_time
     candidates = filter_semver_tags(list(tags.keys()))  # filter out non-semver tags
     versions = {}
     for v in candidates:
-        parsed = semver_parse(v)
+        parsed = semver.parse(v)
         versions[parsed] = v
-    current = semver_parse(tag)
-    norm_tag = semver_normalize(tag)
-    if track == 'PatchLevel':
-        spec = semantic_version.Spec('>{current},<{next_minor}'.format(current=norm_tag,
-                                                                       next_minor=str(current.next_minor())))
-    elif track == 'MinorVersion':
-        spec = semantic_version.Spec('>{current},<{next_major}'.format(current=norm_tag,
-                                                                       next_major=str(current.next_major())))
-    elif track == 'MajorVersion':
-        spec = semantic_version.Spec('>{current}'.format(current=norm_tag))
-    else:
-        raise ValueError('unsupported "track": {track}'.format(track=track))
-    best = spec.select(versions.keys())
+    current = semver.parse(tag)
+    best = semver.best_upgrade(current, list(versions.keys()), track)
     if best is None:
         return None
     return versions[best]
