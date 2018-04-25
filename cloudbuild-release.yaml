@@ -22,6 +22,8 @@ steps:
         ver="$${tag#v}"
         image=us.gcr.io/$PROJECT_ID/kubecd:$TAG_NAME
         docker run --rm --entrypoint=/bin/cat $$image /tmp/kubecd-$$ver.tar.gz > kubecd-$$ver.tar.gz
+        apt update
+        apt install -y python3-setuptools
         tar xvzf kubecd-$$ver.tar.gz
         mkdir ~/.pip
         cat > ~/.pip/pip.conf << EOF
