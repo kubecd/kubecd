@@ -77,6 +77,10 @@ def test_get_newest_matching_tag(docker_hub_expected_tags):
     assert minor_update == '3.3.1'
     major_update = sut.get_newest_matching_tag(ver, docker_hub_expected_tags, 'MajorVersion', ts)
     assert major_update == '4.0.0'
+    tags = {'1.0.0': 0, '1.0.0-0': 0}
+    assert '1.0.0' == sut.get_newest_matching_tag('0.9', tags, 'MajorVersion', 0)
+    tags = {'0.9': 2, '1.0': 1}
+    assert '0.9' == sut.get_newest_matching_tag('0.9', tags, 'Newest', 0)
 
 
 @pytest.fixture
