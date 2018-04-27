@@ -61,7 +61,9 @@ setup(
         'ruamel.yaml~=0.15.37',
         'semantic_version~=2.6.0',
         'requests~=2.18.4',
-        'click~=6.7',
+        'argcomplete~=1.9.4',
+        'argparse~=1.4.0',
+        'blessings',
         'python-dateutil'
     ],
     tests_require=['pytest', 'pytest-cov'],

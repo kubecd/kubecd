@@ -106,17 +106,19 @@ class Environment(ttypes.Environment):
         cluster = get_cluster(self.clusterName)
         return generate_environment_init_command(cluster, self, dry_run)
 
-    def deploy_commands(self, dry_run=False) -> List[str]:
+    def deploy_commands(self, dry_run=False, limit_to_release=None) -> List[str]:
         commands = []
-        for resource_file in self.all_resource_files:
-            cmd = ['kubectl', '--context', 'env:' + self.name, 'apply']
-            if dry_run:
-                cmd.append('--dry-run')
-            cmd.extend(['-f', resource_file])
-            commands.append(cmd)
+        if limit_to_release is None:
+            for resource_file in self.all_resource_files:
+                cmd = ['kubectl', '--context', 'env:{}'.format(self.name), 'apply']
+                if dry_run:
+                    cmd.append('--dry-run')
+                cmd.extend(['-f', resource_file])
+                commands.append(cmd)
         for release in self._all_releases:
-            rel_file = release.from_file
-            commands.append(generate_helm_command_argv(release, self, release_file=rel_file, dry_run=dry_run))
+            if not limit_to_release or release.name == limit_to_release:
+                rel_file = release.from_file
+                commands.append(generate_helm_command_argv(release, self, release_file=rel_file, dry_run=dry_run))
         return commands
 
     @property
