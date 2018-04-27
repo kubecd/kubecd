@@ -49,7 +49,7 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     apply.set_defaults(func=apply_env)
 
     poll_p = s.add_parser('poll', help='poll for new images in registries')
-    poll_p.add_argument('--patch', '-p', help='patch releases.yaml files with updated version')
+    poll_p.add_argument('--patch', '-p', help='patch releases.yaml files with updated version', action='store_true')
     poll_p.add_argument('--release', '-r', help='patch this specific release')
     poll_p.add_argument('--image', '-i', help='poll releases using this image')
     poll_p.add_argument('env', nargs='?', help='name of environment to poll')
