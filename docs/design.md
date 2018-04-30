@@ -116,16 +116,16 @@ In KubeCD, a "release" is also an instance of a Helm chart, but it comes with so
 
 ### Standardized Values
 
-Helm's values files are not typed, so you could have any structure you want in there. However, if we
-at least standardize certain values, a lot of opportunities become available to us. Being able to assume
-that a value exists and what it is being used for also reduces the amount of boilerplate.
+Helm's values files are not typed, so you can have any structure you want in there. However, if we
+standardize a few values, a lot of opportunities become available.
 
-We want to standardize these values:
+KubeCD itself needs to know about two or three values to check for image
 
 | Value name | Usage |
 | --- | --- |
 | `image.repository` | The image repository, which is Docker's term for the registry host plus "path" of the image, for example `gcr.io/project/image` |
 | `image.tag` | The "tag" portion of the chart's main image, for example `2.0` |
+| `image.prefix` | (Optional) if present, will be prepended to `image.repository`. This value is useful for cases where images in different environments reside in different Docker registries (such as with GCR and environments in different GCP projects) |
 
 For sub-charts, the same pattern applies with the sub-chart name prefixed, for example
 `zookeeper.image.repository`.
@@ -340,12 +340,18 @@ Things we have not covered yet, but probably should...
 ### TODO: Secrets
 
 We still don't have a solution for automatically making secrets from Vault available to Kubernetes apps.
+
 One approach we could explore is to declare a way of populating Kubernetes secrets from Vault in this system,
-keeping the secrets themselves out of the `deployments.git` repo, using Vault path references instead. 
+keeping the secrets themselves out of the `deployments.git` repo, using Vault path references instead.
 
 Please use issue #3 is for discussing secrets.
 
-### TODO: Provisioning
+### TODO: Config
+
+Config that is maintained separately from the applications needs to be projected into the deployments repo
+somehow.
+
+### TODO: Provisioning integration
 
 The `environments.yaml` file refers to cloud resources, but we have not defined how these are created.
 This is consciously omitted right now to keep the scope down, but will have to be addressed.
@@ -383,7 +389,8 @@ Helm uses
 [go templates](https://github.com/kubernetes/helm/blob/master/docs/charts.md#templates-and-values)
 on top of Kubernetes YAML resource files. Using templates with a
 whitespace-sensitive format like YAML can be tricky, and something
-we should not burden every developer to have to deal with.
+we should not burden every developer to have to deal with. (A notable tool to keep an eye on
+in this space is [ksonnet](https://github.com/ksonnet/ksonnet).)
 
 Helm's general solution to this is to offer "values" that the user can
 customize, through an arbitrary YAML schema defined in each chart's
@@ -395,31 +402,14 @@ developers learn how to configure resource requirements, external host
 names and path and son on, this learning can be applied to any
 in-house Zedge service.
 
-### WeaveWorks Flux
+### Other Tools / References
 
-[WeaveWorks Flux](https://github.com/weaveworks/flux) is an
-implementation of GitOps for Kubernetes as envisioned by
-[WeaveWorks](https://www.weave.works/). It uses the
-[Operator pattern](https://coreos.com/blog/introducing-operators.html)
-in the sense that it pulls state from Git into a Flux agent running
-within Kubernetes, which then applies the required changes.
-
-Each Kubernetes cluster must be running a Flux agent, which is
-configured with a Git repo, branch and subdirectory within the
-repo.
-
-Flux calls each Kubernetes workload a "controller" (for example a
-DaemonSet, StatefulSet or Deployment), and it has the option to
-automate each "controller".
-
-Flux looks nice, especially when combined with Weave Cloud, but since it
-focuses on workflow resources (stuff with pods), and not config / secrets,
-it is not a full solution for Zedge at this point.
-
-### Other Tools / Links
-
+ * https://github.com/weaveworks/flux
+ * https://coreos.com/blog/introducing-operators.html
  * https://github.com/GoogleCloudPlatform/skaffold
  * https://github.com/keel-hq/keel - implements continuous deployments, but lacks a mechanism
    for re-creating a cluster
  * https://github.com/GoogleCloudPlatform/continuous-deployment-on-kubernetes
  * https://github.com/kelseyhightower/pipeline
+ * https://github.com/ksonnet/ksonnet
+ 

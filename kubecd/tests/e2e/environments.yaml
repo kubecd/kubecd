@@ -1,3 +1,9 @@
+helmRepos:
+  - name: stable
+    url: https://kubernetes-charts.storage.googleapis.com/
+  - name: incubator
+    url: https://kubernetes-charts-incubator.storage.googleapis.com/
+
 clusters:
   - name: minikube
     provider:

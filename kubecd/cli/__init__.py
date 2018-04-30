@@ -1,23 +1,23 @@
 import argparse
 import os
-
 import subprocess
-from blessings import Terminal
 import sys
 from typing import List
 
 import argcomplete
-from argcomplete import FilesCompleter
+import logging
 import ruamel.yaml
 import ruamel.yaml.error
-
-from kubecd import __version__
-from kubecd import environments
-from kubecd.updates import find_updates_for_env
-
+from argcomplete import FilesCompleter
+from blessings import Terminal
 from ruamel.yaml import YAMLError
 
+from kubecd import __version__
+from kubecd import model
+from kubecd.updates import find_updates_for_env, find_updates_for_release
+
 t = Terminal()
+logger = logging.getLogger(__name__)
 
 
 class CliError(Exception):
@@ -27,17 +27,17 @@ class CliError(Exception):
 def parser(prog='kcd') -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=prog)
     p.add_argument(
-        '-f', '--environments-file',
-        help='environments YAML file (default $KCD_ENVIRONMENTS or "environments.yaml")',
+        '-f', '--config-file',
+        help='KubeCD config file file (default $KUBECD_CONFIG or "environments.yaml")',
         metavar='FILE',
-        default=os.getenv('KCD_ENVIRONMENTS', 'environments.yaml')).completer = FilesCompleter(
+        default=os.getenv('KUBECD_CONFIG', 'environments.yaml')).completer = FilesCompleter(
             allowednames=('.yaml', '.yml'), directories=False)
     p.add_argument(
         '--version',
         help='Show version and exit.',
         action='version',
         version='kubecd ' + __version__)
-    p.add_argument('--verbose', '-v', help='Increase verbosity level', action='count')
+    p.add_argument('--verbose', '-v', help='Increase verbosity level', action='count', default=0)
 
     s = p.add_subparsers(dest='command', title='Subcommands', description='Use one of these sub-commands:')
 
@@ -45,12 +45,13 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     apply.add_argument('--dry-run', '-n', help='dry run mode, only print commands', action='store_true', default=False)
     apply.add_argument('--release', '-r', help='apply only this release')
     apply.add_argument('--all-environments', '-a', help='apply all environments', action='store_true', default=False)
-    apply.add_argument('env', nargs='?', help='name of environment to apply')
+    apply.add_argument('env', nargs='?',
+                       help='name of environment to apply, must be specified unless --all-environments is')
     apply.set_defaults(func=apply_env)
 
     poll_p = s.add_parser('poll', help='poll for new images in registries')
     poll_p.add_argument('--patch', '-p', help='patch releases.yaml files with updated version', action='store_true')
-    poll_p.add_argument('--release', '-r', help='patch this specific release')
+    poll_p.add_argument('--release', '-r', help='poll this specific release')
     poll_p.add_argument('--image', '-i', help='poll releases using this image')
     poll_p.add_argument('env', nargs='?', help='name of environment to poll')
     poll_p.set_defaults(func=poll_registries)
@@ -62,6 +63,7 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
 
     list_p = s.add_parser('list', help='list environments or releases')
     list_p.add_argument('kind', help='what to list', choices=['env', 'release'])
+    list_p.set_defaults(func=list_kind)
 
     indent_p = s.add_parser('indent', help='canonically indent YAML files')
     indent_p.add_argument('files', nargs='+', help='file[s] to indent')
@@ -78,10 +80,11 @@ def print_completion(prog, **kwargs):
         sys.stdout.write(argcomplete.shellcode(prog, shell=shell))
 
 
-def apply_env(environments_file, dry_run, all_environments=False, env=None, release=None, **kwargs):
-    target_envs = one_or_all_envs(env, all_environments, file_name=environments_file)
-    commands_to_run = []
+def apply_env(config_file, dry_run, all_environments=False, env=None, release=None, **kwargs):
+    target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
+    commands_to_run = model.config().init_commands()
     for environment in target_envs:
+        logger.info('Collecting commands for environment "%s"', environment.name)
         init_cmds = environment.init_commands(dry_run=dry_run)
         deploy_cmds = environment.deploy_commands(dry_run=dry_run, limit_to_release=release)
         if len(deploy_cmds) > 0:
@@ -89,13 +92,16 @@ def apply_env(environments_file, dry_run, all_environments=False, env=None, rele
             commands_to_run.extend(deploy_cmds)
     for cmd in commands_to_run:
         print('{t.yellow}{cmd}{t.normal}'.format(cmd=' '.join(cmd), t=t))
+        logger.debug('Executing: "%s"', ' '.join(cmd))
         cmd_status = subprocess.call(cmd)
         if cmd_status != 0:
             raise CliError('Command "{cmd}" exited with non-0 status {status}'.format(cmd=cmd, status=cmd_status))
 
 
-def dump_env(environments_file, all_environments=False, env=None, **kwargs):
-    target_envs = one_or_all_envs(env, all_environments, file_name=environments_file)
+def dump_env(config_file, all_environments=False, env=None, **kwargs):
+    target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
+    for cmd in model.config().init_commands():
+        print('{t.yellow}{cmd}{t.normal}'.format(cmd=' '.join(cmd), t=t))
     for environment in target_envs:
         print('{t.green}Environment:{t.normal} {env_name}'.format(env_name=environment.name, t=t))
         for cmd in environment.init_commands(dry_run=False):
@@ -105,44 +111,58 @@ def dump_env(environments_file, all_environments=False, env=None, **kwargs):
         print('')
 
 
-def list_env(environments_file, kind, **kwargs):
-    if kind == 'env':
-        for environment in environments.load(environments_file):
+def list_kind(config_file, kind, **kwargs):
+    if kind == 'env' or kind == 'environment':
+        for environment in model.load(config_file):
             print(environment.name)
+    elif kind == 'release':
+        for environment in model.load(config_file):
+            for release in environment.all_releases:
+                print('{env}/{release}'.format(env=environment.name, release=release.name))
+    else:
+        raise CliError('unknown kind "{}"'.format(kind))
 
 
-def poll_registries(environments_file, all_environments=False, env=None, patch=False, **kwargs):
-    target_envs = one_or_all_envs(env, all_environments, file_name=environments_file)
+def poll_registries(config_file, all_environments=False, env=None, release=None, patch=False, **kwargs):
+    target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
     for environment in target_envs:
-        updates = find_updates_for_env(environment)
+        if release is None:
+            logger.info('polling environment: "%s"', environment.name)
+            updates = find_updates_for_env(environment)
+        else:
+            release_obj = environment.named_release(release)
+            logger.info('polling release: "%s/%s"', environment.name, release_obj)
+            updates = find_updates_for_release(release_obj, environment)
         for release_file in updates:
             mod_yaml = None
             if patch:
+                logger.debug('loading releases file: "%s"', release_file)
                 mod_yaml = load_yaml(release_file)
             for update in updates[release_file]:
                 print(
-                    '{file}: release "{release}" image "{image}" tag "{tag_value}" {tag_from} -> {tag_to}'.format(
+                    '{env}/{release}:\n\tfile: {file}\n\timage: {image}\n\ttag: {tag_from} -> {tag_to}'.format(
+                        env=environment.name,
                         file=release_file,
-                        release=update['release'],
-                        image=update['image_repo'],
-                        tag_value=update['tag_value'],
-                        tag_from=update['old_tag'],
-                        tag_to=update['new_tag'],
+                        release=update.release.name,
+                        image=update.image_repo,
+                        tag_from=update.old_tag,
+                        tag_to=update.new_tag,
                     ))
                 if patch:
                     for yr in mod_yaml['releases']:
-                        if yr['name'] == update['release']:
+                        if yr['name'] == update.release:
                             if 'values' not in yr:
                                 yr['values'] = []
                             found_val = False
                             for yv in yr['values']:
-                                if yv['key'] == update['tag_value']:
-                                    yv['value'] = update['new_tag']
+                                if yv['key'] == update.tag_value:
+                                    yv['value'] = update.new_tag
                                     found_val = True
                                     break
                             if not found_val:
-                                yr['values'].append({'key': update['tag_value'], 'value': update['new_tag']})
+                                yr['values'].append({'key': update.tag_value, 'value': update.new_tag})
             if patch:
+                logger.debug('saving patched file: {file}'.format(file=release_file))
                 save_yaml(mod_yaml, release_file)
 
 
@@ -154,29 +174,24 @@ def indent_file(files, **kwargs):
             raise CliError('invalid YAML file "{}": {}'.format(filename, str(e)))
 
 
-def load_envs(file_name: str) -> List[environments.Environment]:
+def load_envs(file_name: str) -> List[model.Environment]:
     try:
-        environments.load(file_name)
-        return environments.as_list()
+        model.load(file_name)
+        return model.as_list()
     except ruamel.yaml.error.YAMLError as e:
         raise CliError('could not read "{}": {}'.format(file_name, str(e)))
 
 
-def one_or_all_envs(env_name: str, all_envs: bool, file_name: str) -> List[environments.Environment]:
+def one_or_all_envs(env_name: str, all_envs: bool, file_name: str) -> List[model.Environment]:
     load_envs(file_name)
     if env_name is None and all_envs is False:
         raise CliError('need to specify either an environment name or --all')
-    return one_or_more_envs(env_name, file_name)
-
-
-def one_or_more_envs(env_name: str, file_name: str) -> List[environments.Environment]:
-    load_envs(file_name)
     if env_name is not None:
         try:
-            return [environments.get_environment(env_name)]
+            return [model.get_environment(env_name)]
         except KeyError:
             raise CliError('no such environment: {}'.format(env_name))
-    return environments.as_list()
+    return model.as_list()
 
 
 def load_yaml(file_name: str):
@@ -197,10 +212,17 @@ def save_yaml(mod_yaml, file_name: str):
     os.rename(tmp_file, file_name)
 
 
+def verbose_log_level(v):
+    if v == 0:
+        return logging.WARNING
+    if v == 1:
+        return logging.INFO
+    return logging.DEBUG
+
+
 def main():
     p = parser()
     argcomplete.autocomplete(p)
-    # args = p.parse_args()
     args = p.parse_args()
     kwargs = args.__dict__
     if 'func' not in kwargs:
@@ -208,7 +230,7 @@ def main():
         sys.exit(1)
     func = kwargs['func']
     del (kwargs['func'])
-    print(args, file=sys.stderr)
+    logging.basicConfig(stream=sys.stderr, format='{levelname} {message}', style='{', level=verbose_log_level(args.verbose))
     try:
         func(**kwargs)
     except CliError as e:

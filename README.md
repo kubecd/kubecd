@@ -9,7 +9,7 @@ This repository contains the `kubecd` tool for Kubernetes Continuous Deployment 
 
 All the deployable environments are configured in a file called
 `environments.yaml` by default. The schema for this file
-[can be found here (check the `Environments` struct)](idl/github.com/zedge/deployments/deployments.thrift).
+[can be found here (check the `Environments` struct)](idl/github.com/zedge/kubecd/kubecd.thrift).
 
 This file must contain two main objects, `clusters` and `environments`. Each environments maps to one
 namespace in one cluster, but the environment names must be unique within this file.
@@ -56,11 +56,21 @@ environments:
 
 ## Installing and Running
 
-You can install from jfrog artifactory ([see this page](https://zedge.work/repos/zedge-dev-tools/artifactory/#python))
-for how to configure Pip to fetch packages from our private repo):
+First, ensure you have Python 3.5 (run `python3 --version`).
+
+Currently, the Python package must be installed from Zedge's artifactory
+([see this page](https://zedge.work/repos/zedge-dev-tools/artifactory/#python) for how to configure Pip to fetch
+packages from there):
 
     pip install kubecd
     kcd --help
+
+If you are using an OS that ships only with Python 2.7 (such as Ubuntu), you can use
+[pipsi](https://github.com/mitsuhiko/pipsi) to install instead, and add `~/.local/bin` to your PATH:
+
+    pip install pipsi
+    pipsi install --python=python3 kubecd
+    export PATH=$HOME/.local/bin:$PATH
 
 ## Contributing
 
@@ -70,8 +80,7 @@ for how to configure Pip to fetch packages from our private repo):
 
 ### Running From Source
 
-This project requires `pipenv`, Python 3.5 and Docker. You must install `pipenv` yourself before installing
-project dependencies. See [pipenv install docs](https://docs.pipenv.org/install/) for details.
+This project requires Python 3.5 and Docker.
 
 Then you need to generated Thrift source and install a shim that runs directly from your checked out source:
 
@@ -93,5 +102,5 @@ To make a new release:
 
  1. commit and push all changes
  2. update the `__version__` attribute in [`kubecd/__init__.py`](kubecd/__init__.py)
- 3. run `python setup.py release` - this will make a Git tag and push, which will kick off the actual
+ 3. run `python setup.py release` - this will make and push a Git tag, which will kick off the actual
     release process driven by `cloudbuild-release.yaml`

@@ -10,7 +10,7 @@ from .providers import generate_environment_init_command
 from .gen_py import ttypes
 from os import path
 
-_environments = None
+_config = None
 
 
 class ConfigError(BaseException):
@@ -31,6 +31,11 @@ class Release(ttypes.Release):
         issues = []
         if self.chart.reference is not None and self.chart.version is None:
             issues.append('must have a chart.version'.format(self.chart.name))
+        if self.trigger and self.triggers:
+            issues.append('must define only one of "trigger" or "triggers"')
+        if self.trigger:
+            self.triggers = [self.trigger]
+            self.trigger = None
         return issues
 
     def get_resolved_values(self, for_env: ttypes.Environment) -> dict:
@@ -98,6 +103,12 @@ class Environment(ttypes.Environment):
     def all_releases(self) -> List[Release]:
         return self._all_releases
 
+    def named_release(self, name: str) -> Union[Release, None]:
+        for r in self._all_releases:
+            if r.name == name:
+                return r
+        return None
+
     @property
     def all_resource_files(self):
         return self._all_resource_files
@@ -106,7 +117,7 @@ class Environment(ttypes.Environment):
         cluster = get_cluster(self.clusterName)
         return generate_environment_init_command(cluster, self, dry_run)
 
-    def deploy_commands(self, dry_run=False, limit_to_release=None) -> List[str]:
+    def deploy_commands(self, dry_run=False, limit_to_release=None) -> List[List[str]]:
         commands = []
         if limit_to_release is None:
             for resource_file in self.all_resource_files:
@@ -136,18 +147,18 @@ class Cluster(ttypes.Cluster):
         return self._from_file
 
 
-class Environments(ttypes.Environments):
+class KubeCDConfig(ttypes.KubeCDConfig):
     # _environments: List[Environment]
     # _index: Dict[str, Environment] = {}
     # _from_file: str
 
-    def __init__(self, data: ttypes.Environments, from_file: str):
+    def __init__(self, data: ttypes.KubeCDConfig, from_file: str):
         self._environments = [Environment(x, from_file) for x in data.environments]
         self._clusters = [Cluster(x, from_file) for x in data.clusters]
         self._from_file = from_file
         self._env_index = {}
         self._cluster_index = {}
-        super(Environments, self).__init__(**data.__dict__)
+        super(KubeCDConfig, self).__init__(**data.__dict__)
         issues = self.sanity_check()
         if len(issues) > 0:
             raise ValueError('Issues found:\n\t{}'.format('\n\t'.join(issues)))
@@ -174,33 +185,40 @@ class Environments(ttypes.Environments):
     def cluster_by_name(self, name: str) -> Cluster:
         return self._cluster_index[name]
 
+    def init_commands(self) -> List[List[str]]:
+        commands = []
+        if self.helmRepos:
+            for repo in self.helmRepos:
+                commands.append(['helm', 'repo', 'add', repo.name, repo.url])
+        return commands
+
     @property
     def from_file(self):
         return self._from_file
 
 
-def load(file_name: str) -> Environments:
-    global _environments
-    _environments = Environments(load_yaml_with_schema(file_name, ttypes.Environments), from_file=file_name)
-    return _environments
+def load(file_name: str) -> KubeCDConfig:
+    global _config
+    _config = KubeCDConfig(load_yaml_with_schema(file_name, ttypes.KubeCDConfig), from_file=file_name)
+    return _config
 
 
 def as_list() -> List[Environment]:
-    if _environments is None:
+    if _config is None:
         raise ConfigError('environments not yet loaded')
-    return [x for x in _environments]
+    return [x for x in _config]
 
 
 def get_cluster(cluster_name: str) -> Cluster:
-    if _environments is None:
+    if _config is None:
         raise ConfigError('environments not yet loaded')
-    return _environments.cluster_by_name(cluster_name)
+    return _config.cluster_by_name(cluster_name)
 
 
 def get_environment(env_name: str) -> Environment:
-    if _environments is None:
+    if _config is None:
         raise ConfigError('environments not yet loaded')
-    return _environments.env_by_name(env_name)
+    return _config.env_by_name(env_name)
 
 
 def generate_helm_command_argv(rel: Release, env: Environment, release_file: str, dry_run: bool = False) -> List[str]:
@@ -309,3 +327,12 @@ def key_is_in_values(key: Union[List[str], str], values: dict) -> bool:
         if key[0] in values:
             return key_is_in_values(key[1:], values[key[0]])
     return False
+
+
+def releases_subscribing_to_image(image: str):
+    pass
+
+
+def config() -> KubeCDConfig:
+    return _config
+

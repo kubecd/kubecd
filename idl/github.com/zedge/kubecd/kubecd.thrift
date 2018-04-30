@@ -55,6 +55,7 @@ struct Release {
     3: optional string valuesFile;
     4: optional list<ChartValue> values;
     5: optional DeploymentTrigger trigger;
+    6: optional list<DeploymentTrigger> triggers;
 }
 
 struct KubernetesResourceRef {
@@ -110,7 +111,16 @@ struct Environment {
     
 }
 
-struct Environments {
+struct HelmRepo {
+    1: optional string name;
+    2: optional string url;
+    3: optional string caFile;
+    4: optional string certFile;
+    5: optional string keyFile;
+}
+
+struct KubeCDConfig {
     1: optional list<Cluster> clusters;
     2: optional list<Environment> environments;
+    3: optional list<HelmRepo> helmRepos;
 }

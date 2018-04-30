@@ -1,14 +1,17 @@
 import json
 import subprocess
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from typing import Tuple, Dict, List
 import dateutil.parser
+import logging
 
 import requests
 import semantic_version
 
 from . import semver
-from .environments import Environment, key_is_in_values, lookup_value, Release
+from .model import Environment, key_is_in_values, lookup_value, Release
+
+logger = logging.getLogger(__name__)
 
 
 def parse_docker_timestamp(timestamp: str) -> int:
@@ -121,20 +124,35 @@ def get_newest_matching_tag(tag: str, tags: Dict[str, int], track: str, tag_time
     return versions[best]
 
 
-def find_updates_for_release(release: Release, environment: Environment) -> Dict[str, List[Dict]]:
+class ImageUpdate(object):
+    """
+    An object representing an image with an available update. Just type safety convenience.
+    """
+    def __init__(self, old_tag: str, new_tag: str, release: Release, tag_value: str, image_repo: str):
+        self.old_tag = old_tag
+        self.new_tag = new_tag
+        self.release = release
+        self.tag_value = tag_value
+        self.image_repo = image_repo
+
+
+def find_updates_for_release(release: Release, environment: Environment) -> Dict[str, List[ImageUpdate]]:
     updates = defaultdict(list)
-    if release.trigger and release.trigger.image:
-        tag_value = release.trigger.image.tagValue
-        repo_value = release.trigger.image.repoValue
-        prefix_value = release.trigger.image.repoPrefixValue
-        track = release.trigger.image.track
+    if release.triggers is None:
+        return updates
+    for trigger in release.triggers:
+        if trigger.image is None:
+            continue
+        tag_value = trigger.image.tagValue
+        repo_value = trigger.image.repoValue
+        prefix_value = trigger.image.repoPrefixValue
+        track = trigger.image.track
         values = release.get_resolved_values(for_env=environment)
-        # print('found trigger for image "{image}" from value "{value}": {trigger}\nvalues: {values}'.format(
-        #     image=lookup_value(repo_value, values),
-        #     trigger=release.trigger,
-        #     value=tag_value,
-        #     values=values,
-        # ))
+        logger.debug('found trigger for image "%s" from value "%s": %s final values: %s',
+                     lookup_value(repo_value, values),
+                     tag_value,
+                     json.dumps(trigger.image.__dict__),
+                     json.dumps(values))
         if key_is_in_values(repo_value, values):
             image_repo = lookup_value(repo_value, values)
             if key_is_in_values(prefix_value, values):
@@ -144,18 +162,18 @@ def find_updates_for_release(release: Release, environment: Environment) -> Dict
             tag_timestamp = all_tags[image_tag] if image_tag in all_tags else 0
             updated_tag = get_newest_matching_tag(image_tag, all_tags, track, tag_timestamp)
             if updated_tag is not None:
-                updates[release.from_file].append({
-                    'old_tag': image_tag,
-                    'new_tag': updated_tag,
-                    'release': release.name,
-                    'tag_value': tag_value,
-                    'image_repo': image_repo,
-                })
+                updates[release.from_file].append(ImageUpdate(old_tag=image_tag,
+                                                              new_tag=updated_tag,
+                                                              release=release,
+                                                              tag_value=tag_value,
+                                                              image_repo=image_repo))
     return updates
 
 
-def find_updates_for_env(environment: Environment) -> Dict[str, List[Dict]]:
-    updates = defaultdict(list)
+def find_updates_for_env(environment: Environment) -> Dict[str, List[ImageUpdate]]:
+    env_updates = defaultdict(list)
     for release in environment.all_releases:
-        updates.update(find_updates_for_release(release, environment))
-    return updates
+        logger.info('checking updates for release: {env}/{release}'.format(env=environment.name, release=release.name))
+        image_updates = find_updates_for_release(release, environment)
+        env_updates.update(image_updates)
+    return env_updates
