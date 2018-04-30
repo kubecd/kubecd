@@ -131,7 +131,7 @@ def poll_registries(config_file, all_environments=False, env=None, release=None,
             updates = find_updates_for_env(environment)
         else:
             release_obj = environment.named_release(release)
-            logger.info('polling release: "%s/%s"', environment.name, release_obj)
+            logger.info('polling release: "%s/%s"', environment.name, release_obj.name)
             updates = find_updates_for_release(release_obj, environment)
         for release_file in updates:
             mod_yaml = None
@@ -150,12 +150,13 @@ def poll_registries(config_file, all_environments=False, env=None, release=None,
                     ))
                 if patch:
                     for yr in mod_yaml['releases']:
-                        if yr['name'] == update.release:
+                        if yr['name'] == update.release.name:
                             if 'values' not in yr:
                                 yr['values'] = []
                             found_val = False
                             for yv in yr['values']:
                                 if yv['key'] == update.tag_value:
+                                    logger.debug('patching value "{}"'.format(update.tag_value))
                                     yv['value'] = update.new_tag
                                     found_val = True
                                     break
