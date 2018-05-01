@@ -8,8 +8,8 @@ import pytest
 from .. import updates as sut
 
 TEST_DOCKER_HUB_TAGS_URL = 'https://registry.hub.docker.com/v2/repositories/confluentinc/cp-kafka/tags?page_size=256'
-TEST_REGISTRY_TAGS_URL = 'https://docker.trd.zedge.net:5001/v2/zedge/frontend/tags/list'
-TEST_REGISTRY_MANIFESTS_URL_PREFIX = 'https://docker.trd.zedge.net:5001/v2/zedge/frontend/manifests/'
+TEST_REGISTRY_TAGS_URL = 'https://docker.example.net:5001/v2/example/application/tags/list'
+TEST_REGISTRY_MANIFESTS_URL_PREFIX = 'https://docker.example.net:5001/v2/example/application/manifests/'
 
 
 def local_file(file_name: str):
@@ -51,7 +51,7 @@ def test_parse_docker_timestamp():
 @patch('subprocess.check_output')
 def test_get_tags_for_gcr_image(subprocess_mock, gcr_airflow_tags, gcr_expected_tags):
     subprocess_mock.return_value = gcr_airflow_tags.encode('utf-8')
-    tags = sut.get_tags_for_gcr_image('us.gcr.io', 'zedge-prod/airflow')
+    tags = sut.get_tags_for_gcr_image('us.gcr.io', 'gcp-project/airflow')
     assert tags == gcr_expected_tags
 
 
@@ -63,7 +63,7 @@ def test_get_tags_for_docker_hub_image(mock_get, docker_hub_expected_tags):
 
 @patch('requests.get', side_effect=mocked_requests_get)
 def test_get_tags_for_docker_v2_registry(mock_get, docker_registry_v2_expected_tags):
-    tags = sut.get_tags_for_docker_v2_registry('docker.trd.zedge.net:5001', 'zedge/frontend')
+    tags = sut.get_tags_for_docker_v2_registry('docker.example.net:5001', 'example/application')
     print(tags)
     assert tags == docker_registry_v2_expected_tags
 
