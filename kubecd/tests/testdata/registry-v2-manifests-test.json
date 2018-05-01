@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "name": "example/application",
+  "tag": "test",
+  "architecture": "amd64",
+  "fsLayers": [
+    {
+      "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+    },
+    {
+      "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+    },
+    {
+      "blobSum": "sha256:b462ed09381dba8a6ded9ceb0c5310e61c7e32d4c6a866412ce6c8e19dbe3a50"
+    }
+  ],
+  "history": [
+    {
+      "v1Compatibility": "{\"created\":\"2015-02-13T10:04:55.62062787Z\"}"
+    },
+    {
+      "v1Compatibility": "{\"created\":\"2015-02-13T10:04:47.749215072Z\"}"
+    },
+    {
+      "v1Compatibility": "{\"created\":\"2015-02-13T10:04:40.184188522Z\"}"
+    }
+  ],
+  "signatures": [
+    {
+      "header": {
+        "jwk": {
+          "crv": "P-256",
+          "kid": "GXYO:U7T4:SELM:MFI7:2QIN:2DXN:C3V6:NIEW:XE3M:76ZN:TX4A:P4WN",
+          "kty": "EC",
+          "x": "N7zN1Axs4DQZYJoUnH2geqGu6UWC9hymV0LVCtqLT-c",
+          "y": "W06xXp3CHgcrycZq2FqW31-ZNxrMpuXnrP8Lg_jDabw"
+        },
+        "alg": "ES256"
+      },
+      "signature": "NFeCf4p3zX63OoRkiM80QoIC-OJlZS93RXhwO1Fw0t9kWvsry2_VSOdKOAIPRHn6Of70W4LLQlFGF_uBYg3GmA",
+      "protected": "eyJmb3JtYXRMZW5ndGgiOjU5NjkyLCJmb3JtYXRUYWlsIjoiQ24wIiwidGltZSI6IjIwMTgtMDMtMjFUMTI6MzE6MzFaIn0"
+    }
+  ]
+}

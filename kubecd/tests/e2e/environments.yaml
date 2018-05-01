@@ -1,0 +1,28 @@
+helmRepos:
+  - name: stable
+    url: https://kubernetes-charts.storage.googleapis.com/
+  - name: incubator
+    url: https://kubernetes-charts-incubator.storage.googleapis.com/
+
+clusters:
+  - name: minikube
+    provider:
+      minikube: {}
+
+environments:
+  - name: kubecd-e2e-stage
+    clusterName: minikube
+    kubeNamespace: default
+    releasesFiles:
+      - stage-releases.yaml
+    defaultValues:
+      - key: "ingress.domain"
+        value: "stage.local"
+  - name: kubecd-e2e-prod
+    clusterName: minikube
+    kubeNamespace: production
+    releasesFiles:
+      - prod-releases.yaml
+    defaultValues:
+      - key: "ingress.domain"
+        value: "prod.local"

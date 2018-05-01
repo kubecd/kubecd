@@ -1,0 +1,2 @@
+# Install run-time packages via setup.py:
+-e .

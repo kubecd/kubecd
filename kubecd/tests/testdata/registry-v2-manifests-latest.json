@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "name": "example/application",
+  "tag": "latest",
+  "architecture": "amd64",
+  "fsLayers": [
+    {
+      "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+    },
+    {
+      "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+    },
+    {
+      "blobSum": "sha256:f196f9a391a829197faa9731691939097d941bf62d67b7302a8c4ee811f57635"
+    }
+  ],
+  "history": [
+    {
+      "v1Compatibility": "{\"created\":\"2015-07-21T08:47:56.788075151Z\"}"
+    },
+    {
+      "v1Compatibility": "{\"created\":\"2015-07-21T08:47:43.775096075Z\"}"
+    },
+    {
+      "v1Compatibility": "{\"created\":\"2015-07-20T18:46:38.445050216Z\"}"
+    }
+  ],
+  "signatures": [
+    {
+      "header": {
+        "jwk": {
+          "crv": "P-256",
+          "kid": "GXYO:U7T4:SELM:MFI7:2QIN:2DXN:C3V6:NIEW:XE3M:76ZN:TX4A:P4WN",
+          "kty": "EC",
+          "x": "N7zN1Axs4DQZYJoUnH2geqGu6UWC9hymV0LVCtqLT-c",
+          "y": "W06xXp3CHgcrycZq2FqW31-ZNxrMpuXnrP8Lg_jDabw"
+        },
+        "alg": "ES256"
+      },
+      "signature": "IZZSHnOTsevY-pYEDKXlpRYG52nAwkHmkIBdps721lpCxN1NUTeDfiCkR3n7BVEwPNGMgQq8SIWRDoQcwgZo9Q",
+      "protected": "eyJmb3JtYXRMZW5ndGgiOjEzODI5OCwiZm9ybWF0VGFpbCI6IkNuMCIsInRpbWUiOiIyMDE4LTAzLTIzVDA5OjUxOjQxWiJ9"
+    }
+  ]
+}

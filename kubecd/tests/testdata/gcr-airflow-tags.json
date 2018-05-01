@@ -1,0 +1,286 @@
+[
+  {
+    "digest": "sha256:7d3bb92da887c4d6606461c269af46869ade34d6919fd48adca52a15bfe8c1a5",
+    "tags": [
+      "1.8.2"
+    ],
+    "timestamp": {
+      "datetime": "2017-12-19 14:33:08+01:00",
+      "day": 19,
+      "hour": 14,
+      "microsecond": 0,
+      "minute": 33,
+      "month": 12,
+      "second": 8,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:69243b8fed2aef50b41e8a8238f5c2891f9211ba5490d33fbe65d2e0a9d0f3e2",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-12-19 13:24:22+01:00",
+      "day": 19,
+      "hour": 13,
+      "microsecond": 0,
+      "minute": 24,
+      "month": 12,
+      "second": 22,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:37ea27549ffa7c55150f061e2a52c5cd2f8f87b21e4da32b84d54231b051f437",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-12-18 14:56:02+01:00",
+      "day": 18,
+      "hour": 14,
+      "microsecond": 0,
+      "minute": 56,
+      "month": 12,
+      "second": 2,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:61117d309f61e123f1b4e15d52b19192e79748901ca193472ac463793d47082c",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-12-18 14:10:12+01:00",
+      "day": 18,
+      "hour": 14,
+      "microsecond": 0,
+      "minute": 10,
+      "month": 12,
+      "second": 12,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:390a67c13b881b1b0ed9c60073526bb666e0d03a645a0f9d52e54c64932142df",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-12-01 15:39:34+01:00",
+      "day": 1,
+      "hour": 15,
+      "microsecond": 0,
+      "minute": 39,
+      "month": 12,
+      "second": 34,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:23257a3e1f5412d5330f2517ec35a498c37642a44e58bcd6e05b1b70fe6c9200",
+    "tags": [
+      "1.8"
+    ],
+    "timestamp": {
+      "datetime": "2017-11-30 16:57:43+01:00",
+      "day": 30,
+      "hour": 16,
+      "microsecond": 0,
+      "minute": 57,
+      "month": 11,
+      "second": 43,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:d46d745eff8e2d2d290c5b6fdde4dd9dd8a68e9693701f89974793515e09b4a5",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-11-30 16:52:21+01:00",
+      "day": 30,
+      "hour": 16,
+      "microsecond": 0,
+      "minute": 52,
+      "month": 11,
+      "second": 21,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:11a230412b17af22fae4b310d0580f86ab63673ae2d8568d548c824f1724590e",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-11-30 16:48:35+01:00",
+      "day": 30,
+      "hour": 16,
+      "microsecond": 0,
+      "minute": 48,
+      "month": 11,
+      "second": 35,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:2ae818ce25304edfe78c6591d706180bb6a022900a653802a0c1097b4b48a806",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-11-30 13:45:16+01:00",
+      "day": 30,
+      "hour": 13,
+      "microsecond": 0,
+      "minute": 45,
+      "month": 11,
+      "second": 16,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:55e52cc975bd80affeb9fe5392ec2c934888fc5a68b1344cfef233143dfab44a",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-11-22 12:13:21+01:00",
+      "day": 22,
+      "hour": 12,
+      "microsecond": 0,
+      "minute": 13,
+      "month": 11,
+      "second": 21,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:b3a92b52ba9f28de043e4abd50291ffeb4ccf65ea6e5cda3e951fc19e1f2a0dd",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-10-31 10:17:26+01:00",
+      "day": 31,
+      "hour": 10,
+      "microsecond": 0,
+      "minute": 17,
+      "month": 10,
+      "second": 26,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:8e01e85e7d074856c9cebc8f95adf9f54f6d2689197d7d3cd55e5aa675716392",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-10-30 14:20:02+01:00",
+      "day": 30,
+      "hour": 14,
+      "microsecond": 0,
+      "minute": 20,
+      "month": 10,
+      "second": 2,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:9324d7fefe10284be647cb0c05a00dbfc1aa032305a364072c0944fc51aafbf7",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-10-18 16:32:09+02:00",
+      "day": 18,
+      "hour": 16,
+      "microsecond": 0,
+      "minute": 32,
+      "month": 10,
+      "second": 9,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:113bceceffad64804f296a57f9096ef2ea72e591147c58113fc45862792b52bb",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-10-18 16:32:09+02:00",
+      "day": 18,
+      "hour": 16,
+      "microsecond": 0,
+      "minute": 32,
+      "month": 10,
+      "second": 9,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:c562c832c5fcf013b5857b1afb3f8fa6983e38239be067bf4459844c121bb80c",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-10-18 16:16:54+02:00",
+      "day": 18,
+      "hour": 16,
+      "microsecond": 0,
+      "minute": 16,
+      "month": 10,
+      "second": 54,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:d6f833b17cdd8b826a5a78d46a085533ddfde198cc88ded4fbea0c75e0f7762f",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-10-18 15:51:27+02:00",
+      "day": 18,
+      "hour": 15,
+      "microsecond": 0,
+      "minute": 51,
+      "month": 10,
+      "second": 27,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:fdd7e21d2c34ce5972168aed45f8bb580f6c46a75bb4b60d638eac259815c7db",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-10-18 15:51:27+02:00",
+      "day": 18,
+      "hour": 15,
+      "microsecond": 0,
+      "minute": 51,
+      "month": 10,
+      "second": 27,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:ef32c5ae49e2df5189db776988f9f65c9effe412dcf40d7200cec33b971e7d6b",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-09-27 12:15:04+02:00",
+      "day": 27,
+      "hour": 12,
+      "microsecond": 0,
+      "minute": 15,
+      "month": 9,
+      "second": 4,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:8d13860c8da2cd4dacdc6a86a04f2a3f4cb98a4ac5e0bf119dc2057bde52fa03",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-09-26 15:19:15+02:00",
+      "day": 26,
+      "hour": 15,
+      "microsecond": 0,
+      "minute": 19,
+      "month": 9,
+      "second": 15,
+      "year": 2017
+    }
+  },
+  {
+    "digest": "sha256:27e1ea1f995a28f1a14f20ed74fd5c2954581217bc06c4fa6ecbea5ef903180f",
+    "tags": [],
+    "timestamp": {
+      "datetime": "2017-09-21 10:18:54+02:00",
+      "day": 21,
+      "hour": 10,
+      "microsecond": 0,
+      "minute": 18,
+      "month": 9,
+      "second": 54,
+      "year": 2017
+    }
+  }
+]

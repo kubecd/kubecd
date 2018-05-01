@@ -1,0 +1,17 @@
+sudo: required
+services:
+  - docker
+language: python
+before_install:
+  - make
+
+script:
+  - pip install -e . -r requirements-test.txt
+  - pytest
+
+deploy:
+  provider: pypi
+  user: stigsb
+  password: ""
+  on:
+    tags: true
