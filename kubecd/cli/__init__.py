@@ -69,6 +69,13 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     indent_p.add_argument('files', nargs='+', help='file[s] to indent')
     indent_p.set_defaults(func=indent_file)
 
+    observe = s.add_parser('observe', help='observe a new image version')
+    observe.add_argument('--image', '-i', help='the image, including tag', metavar='IMAGE:TAG')
+    observe.add_argument('--patch', help='patch release files with updated tags',
+                         action='store_true', default=False)
+    observe.add_argument('--submit-pr', help='submit a pull request with the updated tags',
+                         action='store_true', default=False)
+
     completion_p = s.add_parser('completion', help='print shell completion script')
     completion_p.set_defaults(func=print_completion, prog=prog)
     return p
@@ -149,19 +156,19 @@ def poll_registries(config_file, all_environments=False, env=None, release=None,
                         tag_to=update.new_tag,
                     ))
                 if patch:
-                    for yr in mod_yaml['releases']:
-                        if yr['name'] == update.release.name:
-                            if 'values' not in yr:
-                                yr['values'] = []
+                    for mod_rel in mod_yaml['releases']:
+                        if mod_rel['name'] == update.release.name:
+                            if 'values' not in mod_rel:
+                                mod_rel['values'] = []
                             found_val = False
-                            for yv in yr['values']:
+                            for yv in mod_rel['values']:
                                 if yv['key'] == update.tag_value:
                                     logger.debug('patching value "{}"'.format(update.tag_value))
                                     yv['value'] = update.new_tag
                                     found_val = True
                                     break
                             if not found_val:
-                                yr['values'].append({'key': update.tag_value, 'value': update.new_tag})
+                                mod_rel['values'].append({'key': update.tag_value, 'value': update.new_tag})
             if patch:
                 logger.debug('saving patched file: {file}'.format(file=release_file))
                 save_yaml(mod_yaml, release_file)

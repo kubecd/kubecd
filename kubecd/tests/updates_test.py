@@ -13,7 +13,7 @@ TEST_REGISTRY_MANIFESTS_URL_PREFIX = 'https://docker.trd.zedge.net:5001/v2/zedge
 
 
 def local_file(file_name: str):
-    with open(os.path.join(os.path.dirname(__file__), file_name)) as f:
+    with open(os.path.join(os.path.dirname(__file__), 'testdata', file_name)) as f:
         return f.read()
 
 

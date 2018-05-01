@@ -162,11 +162,13 @@ def find_updates_for_release(release: Release, environment: Environment) -> Dict
             tag_timestamp = all_tags[image_tag] if image_tag in all_tags else 0
             updated_tag = get_newest_matching_tag(image_tag, all_tags, track, tag_timestamp)
             if updated_tag is not None:
+                logger.debug('found update for "%s": "%s" -> "%s"', image_repo, image_tag, updated_tag)
                 updates[release.from_file].append(ImageUpdate(old_tag=image_tag,
                                                               new_tag=updated_tag,
                                                               release=release,
                                                               tag_value=tag_value,
                                                               image_repo=image_repo))
+    logger.debug('find_updates_for_release: returning: %r', updates)
     return updates
 
 
@@ -175,5 +177,7 @@ def find_updates_for_env(environment: Environment) -> Dict[str, List[ImageUpdate
     for release in environment.all_releases:
         logger.info('checking updates for release: {env}/{release}'.format(env=environment.name, release=release.name))
         image_updates = find_updates_for_release(release, environment)
-        env_updates.update(image_updates)
+        for file, updates in image_updates.items():
+            env_updates[file].extend(updates)
+    logger.debug('find_updates_for_env: returning: %r', env_updates)
     return env_updates
