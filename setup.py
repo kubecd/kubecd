@@ -56,7 +56,6 @@ setup(
     author_email='stig@zedge.net',
     license='Apache 2',
     packages=find_packages(),
-    data_files=['README.md'],
     install_requires=[
         'thrift==0.11.0',
         'ruamel.yaml~=0.15.37',
