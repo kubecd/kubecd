@@ -11,7 +11,7 @@ This repository contains the `kubecd` tool for Kubernetes Continuous Deployment 
 
 All the deployable environments are configured in a file called
 `environments.yaml` by default. The schema for this file
-[can be found here (check the `Environments` struct)](idl/github.com/zedge/kubecd/kubecd.thrift).
+[can be found here (check the `KubeCDConfig` struct)](idl/github.com/zedge/kubecd/kubecd.thrift).
 
 This file must contain two main objects, `clusters` and `environments`. Each environments maps to one
 namespace in one cluster, but the environment names must be unique within this file.
