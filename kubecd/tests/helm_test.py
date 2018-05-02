@@ -1,10 +1,4 @@
-import json
-import os
-from typing import Dict
-
-import pytest
-from unittest.mock import patch
-from .. import model as sut
+from .. import helm as sut
 
 
 def test_lookup_value():

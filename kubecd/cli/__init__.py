@@ -12,7 +12,7 @@ from argcomplete import FilesCompleter
 from blessings import Terminal
 from ruamel.yaml import YAMLError
 
-from kubecd import __version__
+from kubecd import __version__, helm
 from kubecd import model
 from kubecd.updates import find_updates_for_env, find_updates_for_release
 
@@ -93,7 +93,7 @@ def apply_env(config_file, dry_run, all_environments=False, env=None, release=No
     for environment in target_envs:
         logger.info('Collecting commands for environment "%s"', environment.name)
         init_cmds = environment.init_commands(dry_run=dry_run)
-        deploy_cmds = environment.deploy_commands(dry_run=dry_run, limit_to_release=release)
+        deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_release=release)
         if len(deploy_cmds) > 0:
             commands_to_run.extend(init_cmds)
             commands_to_run.extend(deploy_cmds)
@@ -113,7 +113,7 @@ def dump_env(config_file, all_environments=False, env=None, **kwargs):
         print('{t.green}Environment:{t.normal} {env_name}'.format(env_name=environment.name, t=t))
         for cmd in environment.init_commands(dry_run=False):
             print('{t.yellow}{cmd}{t.normal}'.format(cmd=' '.join(cmd), t=t))
-        for cmd in environment.deploy_commands(dry_run=False):
+        for cmd in helm.deploy_commands(environment, dry_run=False):
             print(' '.join(cmd))
         print('')
 

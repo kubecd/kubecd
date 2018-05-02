@@ -1,6 +1,6 @@
 import json
 import subprocess
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from typing import Tuple, Dict, List
 import dateutil.parser
 import logging
@@ -8,8 +8,10 @@ import logging
 import requests
 import semantic_version
 
+from kubecd import helm
 from . import semver
-from .model import Environment, key_is_in_values, lookup_value, Release
+from .model import Environment, Release
+from .helm import key_is_in_values, lookup_value
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +149,7 @@ def find_updates_for_release(release: Release, environment: Environment) -> Dict
         repo_value = trigger.image.repoValue
         prefix_value = trigger.image.repoPrefixValue
         track = trigger.image.track
-        values = release.get_resolved_values(for_env=environment)
+        values = helm.get_resolved_values(release, for_env=environment)
         logger.debug('found trigger for image "%s" from value "%s": %s final values: %s',
                      lookup_value(repo_value, values),
                      tag_value,
