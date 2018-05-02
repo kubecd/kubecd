@@ -3,6 +3,8 @@ title: Kubernetes Continuous Deployment Tool
 toc_title: KubeCD
 ---
 
+[![Build Status](https://travis-ci.org/zedge/kubecd.svg?branch=master)](https://travis-ci.org/zedge/kubecd)
+
 This repository contains the `kubecd` tool for Kubernetes Continuous Deployment and cluster inventory.
 
 ## Configuring Environments
