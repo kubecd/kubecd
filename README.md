@@ -101,4 +101,4 @@ To make a new release:
  1. commit and push all changes
  2. update the `__version__` attribute in [`kubecd/__init__.py`](kubecd/__init__.py)
  3. run `python setup.py release` - this will make and push a Git tag, which will kick off the actual
-    release process driven by `cloudbuild-release.yaml`
+    release process driven by Travis
