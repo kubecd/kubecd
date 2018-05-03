@@ -8,7 +8,7 @@ import logging
 import requests
 import semantic_version
 
-from kubecd import helm
+from . import helm
 from . import semver
 from .model import Environment, Release
 from .helm import key_is_in_values, lookup_value

@@ -138,6 +138,8 @@ def poll_registries(config_file, all_environments=False, env=None, release=None,
             updates = find_updates_for_env(environment)
         else:
             release_obj = environment.named_release(release)
+            if release_obj is None:
+                raise CliError('no release called "{} in environment "{}""'.format(release, env))
             logger.info('polling release: "%s/%s"', environment.name, release_obj.name)
             updates = find_updates_for_release(release_obj, environment)
         for release_file in updates:
