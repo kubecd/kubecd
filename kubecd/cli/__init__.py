@@ -120,10 +120,10 @@ def dump_env(config_file, all_environments=False, env=None, **kwargs):
 
 def list_kind(config_file, kind, **kwargs):
     if kind == 'env' or kind == 'environment':
-        for environment in model.load(config_file):
+        for environment in load_model(config_file):
             print(environment.name)
     elif kind == 'release':
-        for environment in model.load(config_file):
+        for environment in load_model(config_file):
             for release in environment.all_releases:
                 print('{env}/{release}'.format(env=environment.name, release=release.name))
     else:
@@ -186,7 +186,7 @@ def indent_file(files, **kwargs):
 
 def load_envs(file_name: str) -> List[model.Environment]:
     try:
-        model.load(file_name)
+        load_model(file_name)
         return model.as_list()
     except ruamel.yaml.error.YAMLError as e:
         raise CliError('could not read "{}": {}'.format(file_name, str(e)))
@@ -202,6 +202,13 @@ def one_or_all_envs(env_name: str, all_envs: bool, file_name: str) -> List[model
         except KeyError:
             raise CliError('no such environment: {}'.format(env_name))
     return model.as_list()
+
+
+def load_model(file_name: str):
+    try:
+        return model.load(file_name)
+    except FileNotFoundError as e:
+        raise CliError('file not found: {}'.format(e.filename))
 
 
 def load_yaml(file_name: str):
