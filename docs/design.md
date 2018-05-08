@@ -9,7 +9,7 @@ KubeCD aims to provide the following:
 
 1. A way to declare what should be running in a Kubernetes cluster using [GitOps](#gitops) principles, and
    tools to make it so.
-1. A low-boilerplate continuous delivery mechanism for IT and developers, that:
+1. A low-boilerplate continuous delivery mechanism for ops and developers, that:
    * ...is easy to getting started with, and is maintainable over time.
    * ...is agnostic of CI/build servers
    * ...allows for sharing properties among services in the same cluster/environment (such as external domain).

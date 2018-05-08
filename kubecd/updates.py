@@ -130,12 +130,35 @@ class ImageUpdate(object):
     """
     An object representing an image with an available update. Just type safety convenience.
     """
-    def __init__(self, old_tag: str, new_tag: str, release: Release, tag_value: str, image_repo: str):
+    def __init__(self, new_tag: str, tag_value: str, release: Release, old_tag: str=None, image_repo: str=None):
         self.old_tag = old_tag
         self.new_tag = new_tag
         self.release = release
         self.tag_value = tag_value
         self.image_repo = image_repo
+
+
+def release_wants_tag_update(release: Release, new_tag: str) -> List[ImageUpdate]:
+    updates = []
+    for trigger in release.triggers:
+        if trigger.image is None or trigger.image.tagValue is None:
+            continue
+        values = helm.get_resolved_values(release, for_env=None, skip_value_from=True)
+        tag_value = trigger.image.tagValue
+        current_tag = lookup_value(tag_value, values)
+        # if the current version is not semver, consider any value to be an update
+        if not semver.is_semver(current_tag):
+            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release))
+            continue
+        # if the new version is not semver, consider it an update only if track == Newest
+        if not semver.is_semver(new_tag) and trigger.image.track == 'Newest':
+            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release))
+            continue
+        if current_tag is not None and semver.is_wanted_upgrade(semver.parse(current_tag),
+                                                                semver.parse(new_tag),
+                                                                trigger.image.track):
+            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release))
+    return updates
 
 
 def find_updates_for_release(release: Release, environment: Environment) -> Dict[str, List[ImageUpdate]]:
@@ -149,7 +172,7 @@ def find_updates_for_release(release: Release, environment: Environment) -> Dict
         repo_value = trigger.image.repoValue
         prefix_value = trigger.image.repoPrefixValue
         track = trigger.image.track
-        values = helm.get_resolved_values(release, for_env=environment)
+        values = helm.get_resolved_values(release, for_env=environment, skip_value_from=True)
         logger.debug('found trigger for image "%s" from value "%s": %s final values: %s',
                      lookup_value(repo_value, values),
                      tag_value,

@@ -5,9 +5,13 @@ from typing import List, Union
 
 import ruamel.yaml
 
+from . import model
 from .gen_py import ttypes
-from .model import Release, Environment
 from .utils import resolve_file_path
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def inspect(chart_reference: str, chart_version: str) -> str:
@@ -16,11 +20,7 @@ def inspect(chart_reference: str, chart_version: str) -> str:
     return output
 
 
-def get_resolved_values(release: Release, for_env: ttypes.Environment) -> dict:
-    return get_resolved_values(release, for_env)
-
-
-def deploy_commands(env: Environment, dry_run=False, limit_to_release=None) -> List[List[str]]:
+def deploy_commands(env: model.Environment, dry_run=False, limit_to_release=None) -> List[List[str]]:
     commands = []
     if limit_to_release is None:
         for resource_file in env.all_resource_files:
@@ -36,8 +36,8 @@ def deploy_commands(env: Environment, dry_run=False, limit_to_release=None) -> L
     return commands
 
 
-def generate_helm_command_argv(rel: Release,
-                               env: Environment,
+def generate_helm_command_argv(rel: model.Release,
+                               env: model.Environment,
                                release_file: str,
                                dry_run: bool = False) -> List[str]:
     chart_arg = rel.chart.reference
@@ -46,7 +46,8 @@ def generate_helm_command_argv(rel: Release,
         if not path.exists(chart_arg):
             raise ValueError('{}: release "{}" chart.dir "{}" does not exist'.format(
                 release_file, rel.name, chart_arg))
-    argv = ['helm', '--kube-context', 'env:' + env.name, 'upgrade', rel.name, chart_arg, '-i']
+    argv = ['helm', '--kube-context', 'env:' + env.name, 'upgrade', rel.name, chart_arg, '-i',
+            '--namespace', env.kubeNamespace]
     if dry_run:
         argv.append('--dry-run')
     if env.defaultValuesFile:
@@ -64,7 +65,7 @@ def generate_helm_command_argv(rel: Release,
     return argv
 
 
-def resolve_gce_address_value(address: ttypes.GceAddressValueRef, env: Environment):
+def resolve_gce_address_value(address: ttypes.GceAddressValueRef, env: model.Environment):
     cmd = ['gcloud', 'compute', 'addresses', 'describe', address.name, '--format', 'value(address)']
     provider = env.cluster.provider
     cmd.extend(['--project', provider.gke.project])
@@ -75,9 +76,9 @@ def resolve_gce_address_value(address: ttypes.GceAddressValueRef, env: Environme
     return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
-def resolve_value(value: ttypes.ChartValue, env: Environment) -> tuple:
+def resolve_value(value: ttypes.ChartValue, env: model.Environment, skip_value_from=False) -> tuple:
     v = value.value
-    if value.valueFrom:
+    if value.valueFrom and not skip_value_from:
         if value.valueFrom.gceResource:
             if value.valueFrom.gceResource.address:
                 v = resolve_gce_address_value(value.valueFrom.gceResource.address, env)
@@ -101,12 +102,14 @@ def load_values_file(file_name: str) -> dict:
         return ruamel.yaml.safe_load(f)
 
 
-def values_list_to_dict(values: List[ttypes.ChartValue], env: Environment) -> dict:
+def values_list_to_dict(values: List[ttypes.ChartValue], env: model.Environment, skip_value_from=False) -> dict:
     """
     Convert a list of ChartValue objects with keys on the form ``"foo.bar"``
     to a nested dictionary like ``{"foo": {"bar": ...}}``.
     :param values: list of ChartValue objects
     :param env: current environment
+    :param skip_value_from: whether to skip resolving "valueFrom" entries (which will invoke
+                            commands or API calls)
     :return:
     """
     def val_to_dict(key: List[str], value) -> dict:
@@ -116,7 +119,7 @@ def values_list_to_dict(values: List[ttypes.ChartValue], env: Environment) -> di
 
     output = {}
     for value_obj in values:
-        k, v = resolve_value(value_obj, env)
+        k, v = resolve_value(value_obj, env, skip_value_from=skip_value_from)
         output = merge_values(from_dict=val_to_dict(k.split('.'), v), onto_dict=output)
     return output
 
@@ -143,7 +146,7 @@ def key_is_in_values(key: Union[List[str], str], values: dict) -> bool:
     return False
 
 
-def get_resolved_values(release: Release, for_env: Environment) -> dict:
+def get_resolved_values(release: model.Release, for_env: Union[model.Environment, None], skip_value_from=False) -> dict:
     # 1. get values from chart if in a local dir
     # 2. merge with valuesFile:
     # 3. merge with values:
@@ -157,12 +160,13 @@ def get_resolved_values(release: Release, for_env: Environment) -> dict:
         output = inspect(release.chart.reference, release.chart.version)
         chart_default_values = ruamel.yaml.safe_load(output)
         values = merge_values(from_dict=chart_default_values, onto_dict=values)
-    if len(for_env.defaultValues) > 0:
-        default_values = values_list_to_dict(for_env.defaultValues, for_env)
+    if for_env is not None and len(for_env.defaultValues) > 0:
+        default_values = values_list_to_dict(for_env.defaultValues, for_env, skip_value_from=skip_value_from)
         values = merge_values(from_dict=default_values, onto_dict=values)
     if release.valuesFile:
         values_file = resolve_file_path(release.valuesFile, relative_to_file=release._from_file)
         values = merge_values(from_dict=load_values_file(values_file), onto_dict=values)
-    if release.values:
-        values = merge_values(from_dict=values_list_to_dict(release.values, for_env), onto_dict=values)
+    if for_env is not None and release.values:
+        values = merge_values(from_dict=values_list_to_dict(release.values, for_env, skip_value_from=skip_value_from),
+                              onto_dict=values)
     return values

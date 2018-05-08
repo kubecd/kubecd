@@ -1,11 +1,12 @@
 from collections import defaultdict
-from typing import List, Union
+from os import path
+from typing import List, Union, Dict
 
+from . import helm
+from .gen_py import ttypes
+from .providers import generate_environment_init_command
 from .thriftutils import load_yaml_with_schema
 from .utils import resolve_file_path
-from .providers import generate_environment_init_command
-from .gen_py import ttypes
-from os import path
 
 _config = None
 
@@ -115,6 +116,7 @@ class KubeCDConfig(ttypes.KubeCDConfig):
         self._from_file = from_file
         self._env_index = {}
         self._cluster_index = {}
+        self._image_index = None
         super(KubeCDConfig, self).__init__(**data.__dict__)
         issues = self.sanity_check()
         if len(issues) > 0:
@@ -148,6 +150,26 @@ class KubeCDConfig(ttypes.KubeCDConfig):
             for repo in self.helmRepos:
                 commands.append(['helm', 'repo', 'add', repo.name, repo.url])
         return commands
+
+    @property
+    def image_index(self) -> Dict[str, List[Release]]:
+        index = defaultdict(list)
+        if self._image_index is None:
+            for env in self._environments:
+                for rel in env.all_releases:
+                    values = helm.get_resolved_values(rel, env, skip_value_from=True)
+                    if rel.triggers:
+                        for t in rel.triggers:
+                            if t.image:
+                                repo = helm.lookup_value(t.image.repoValue, values)
+                                if repo is None:
+                                    break
+                                prefix = helm.lookup_value(t.image.repoPrefixValue, values)
+                                if prefix is not None:
+                                    repo = prefix + repo
+                                index[repo].append(rel)
+            self._image_index = index
+        return self._image_index
 
     @property
     def from_file(self):

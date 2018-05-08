@@ -3,6 +3,14 @@ from typing import List
 from semantic_version import Version, validate, Spec
 
 
+def is_semver(version: str) -> bool:
+    try:
+        parse(version)
+        return True
+    except ValueError:
+        return False
+
+
 def normalize(version: str) -> str:
     return version[1:] if version.startswith('v') else version
 
@@ -35,3 +43,8 @@ def best_upgrade(current: Version, candidates: List[Version], track: str='MajorV
     else:
         raise ValueError('unsupported "track": {track}'.format(track=track))
     return spec.select(candidates)
+
+
+def is_wanted_upgrade(current: Version, candidate: Version, track: str='MajorVersion'):
+    best = best_upgrade(current, [candidate], track)
+    return best == candidate

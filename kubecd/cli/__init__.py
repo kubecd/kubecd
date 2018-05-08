@@ -12,7 +12,7 @@ from argcomplete import FilesCompleter
 from blessings import Terminal
 from ruamel.yaml import YAMLError
 
-from kubecd import __version__, helm
+from kubecd import __version__, helm, updates
 from kubecd import model
 from kubecd.updates import find_updates_for_env, find_updates_for_release
 
@@ -75,10 +75,24 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
                          action='store_true', default=False)
     observe.add_argument('--submit-pr', help='submit a pull request with the updated tags',
                          action='store_true', default=False)
+    observe.set_defaults(func=observe_new_image)
 
     completion_p = s.add_parser('completion', help='print shell completion script')
     completion_p.set_defaults(func=print_completion, prog=prog)
     return p
+
+
+def observe_new_image(config_file: str, image: str, patch: bool, submit_pr: bool, **kwargs):
+    kcd_config = load_model(config_file)
+    image_repo, image_tag = image.split(':')
+    image_index = kcd_config.image_index
+    if image_repo in image_index:
+        for release in image_index[image_repo]:
+            update_list = updates.release_wants_tag_update(release, image_tag)
+            for update in update_list:
+                print('release: {release} tagValue: {tag}'.format(release=update.release.name, tag=update.tag_value))
+            if len(update_list) > 0 and patch:
+                patch_releases_file(release.from_file, update_list)
 
 
 def print_completion(prog, **kwargs):
@@ -135,19 +149,15 @@ def poll_registries(config_file, all_environments=False, env=None, release=None,
     for environment in target_envs:
         if release is None:
             logger.info('polling environment: "%s"', environment.name)
-            updates = find_updates_for_env(environment)
+            file_updates = find_updates_for_env(environment)
         else:
             release_obj = environment.named_release(release)
             if release_obj is None:
                 raise CliError('no release called "{} in environment "{}""'.format(release, env))
             logger.info('polling release: "%s/%s"', environment.name, release_obj.name)
-            updates = find_updates_for_release(release_obj, environment)
-        for release_file in updates:
-            mod_yaml = None
-            if patch:
-                logger.debug('loading releases file: "%s"', release_file)
-                mod_yaml = load_yaml(release_file)
-            for update in updates[release_file]:
+            file_updates = find_updates_for_release(release_obj, environment)
+        for release_file, update_list in file_updates.items():
+            for update in update_list:
                 print(
                     '{env}/{release}:\n\tfile: {file}\n\timage: {image}\n\ttag: {tag_from} -> {tag_to}'.format(
                         env=environment.name,
@@ -157,23 +167,29 @@ def poll_registries(config_file, all_environments=False, env=None, release=None,
                         tag_from=update.old_tag,
                         tag_to=update.new_tag,
                     ))
-                if patch:
-                    for mod_rel in mod_yaml['releases']:
-                        if mod_rel['name'] == update.release.name:
-                            if 'values' not in mod_rel:
-                                mod_rel['values'] = []
-                            found_val = False
-                            for yv in mod_rel['values']:
-                                if yv['key'] == update.tag_value:
-                                    logger.debug('patching value "{}"'.format(update.tag_value))
-                                    yv['value'] = update.new_tag
-                                    found_val = True
-                                    break
-                            if not found_val:
-                                mod_rel['values'].append({'key': update.tag_value, 'value': update.new_tag})
             if patch:
-                logger.debug('saving patched file: {file}'.format(file=release_file))
-                save_yaml(mod_yaml, release_file)
+                patch_releases_file(release_file, update_list)
+
+
+def patch_releases_file(releases_file: str, updates_list: List[updates.ImageUpdate]):
+    logger.debug('loading releases file: "%s"', releases_file)
+    mod_yaml = load_yaml(releases_file)
+    for update in updates_list:
+        for mod_rel in mod_yaml['releases']:
+            if mod_rel['name'] == update.release.name:
+                if 'values' not in mod_rel:
+                    mod_rel['values'] = []
+                found_val = False
+                for yv in mod_rel['values']:
+                    if yv['key'] == update.tag_value:
+                        logger.debug('patching value "{}"'.format(update.tag_value))
+                        yv['value'] = update.new_tag
+                        found_val = True
+                        break
+                if not found_val:
+                    mod_rel['values'].append({'key': update.tag_value, 'value': update.new_tag})
+    logger.debug('saving patched file: {file}'.format(file=releases_file))
+    save_yaml(mod_yaml, releases_file)
 
 
 def indent_file(files, **kwargs):
@@ -247,7 +263,10 @@ def main():
         sys.exit(1)
     func = kwargs['func']
     del (kwargs['func'])
-    logging.basicConfig(stream=sys.stderr, format='{levelname} {message}', style='{', level=verbose_log_level(args.verbose))
+    logging.basicConfig(stream=sys.stderr,
+                        format='{levelname} {message}',
+                        style='{',
+                        level=verbose_log_level(args.verbose))
     try:
         func(**kwargs)
     except CliError as e:
