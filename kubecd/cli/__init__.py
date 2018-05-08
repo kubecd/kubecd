@@ -12,7 +12,7 @@ from argcomplete import FilesCompleter
 from blessings import Terminal
 from ruamel.yaml import YAMLError
 
-from kubecd import __version__, helm, updates
+from kubecd import __version__, helm, updates, github
 from kubecd import model
 from kubecd.updates import find_updates_for_env, find_updates_for_release
 
@@ -86,6 +86,7 @@ def observe_new_image(config_file: str, image: str, patch: bool, submit_pr: bool
     kcd_config = load_model(config_file)
     image_repo, image_tag = image.split(':')
     image_index = kcd_config.image_index
+    patched_files = []
     if image_repo in image_index:
         for release in image_index[image_repo]:
             update_list = updates.release_wants_tag_update(release, image_tag)
@@ -93,6 +94,9 @@ def observe_new_image(config_file: str, image: str, patch: bool, submit_pr: bool
                 print('release: {release} tagValue: {tag}'.format(release=update.release.name, tag=update.tag_value))
             if len(update_list) > 0 and patch:
                 patch_releases_file(release.from_file, update_list)
+                patched_files.append(release.from_file)
+    if submit_pr and len(patched_files) > 0:
+        github.pr_from_files(patched_files, 'Observed image {image}'.format(image=image))
 
 
 def print_completion(prog, **kwargs):
