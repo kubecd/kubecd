@@ -1,0 +1,16 @@
+rbac:
+  create: true
+
+alertmanager:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: false
+
+nodeExporter:
+  enabled: true
+
+server:
+  persistentVolume:
+    enabled: true
+    size: 50Gi

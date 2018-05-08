@@ -1,0 +1,6 @@
+releases:
+  - name: prometheus
+    chart:
+      reference: stable/prometheus
+      version: 6.3.0
+    valuesFile: values-prometheus.yaml

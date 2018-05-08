@@ -1,0 +1,43 @@
+helmRepos:
+  - name: stable
+    url: https://kubernetes-charts.storage.googleapis.com/
+  - name: incubator
+    url: https://kubernetes-charts-incubator.storage.googleapis.com/
+
+clusters:
+  - name: prod-cluster
+    provider:
+      gke:
+        project: example-com-prod
+        clusterName: prod-cluster
+        zone: us-central1-c
+  - name: test-cluster
+    provider:
+      gke:
+        project: example-com-test
+        clusterName: test-cluster
+        zone: us-central1-c
+
+environments:
+  - name: prod
+    clusterName: prod-cluster
+    kubeNamespace: default
+    releasesFiles:
+      - common/base-env.yaml
+      - prod/releases.yaml
+    defaultValues:
+      - key: "image.prefix"
+        value: "gcr.io/example-com-prod/"
+      - key: "ingress.domain"
+        value: "prod.example.com"
+  - name: test
+    clusterName: test-cluster
+    kubeNamespace: default
+    releasesFiles:
+      - common/base-env.yaml
+      - test/releases.yaml
+    defaultValues:
+      - key: "image.prefix"
+        value: "gcr.io/example-com-test/"
+      - key: "ingress.domain"
+        value: "test.example.com"
