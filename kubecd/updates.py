@@ -1,6 +1,6 @@
 import json
 import subprocess
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from typing import Tuple, Dict, List
 import dateutil.parser
 import logging
@@ -39,12 +39,12 @@ def parse_image_repo(repo: str) -> Tuple[str, str]:
     return 'docker.io', repo
 
 
-def get_tags_for_gcr_image(registry: str, repo: str) -> Dict[str, int]:
+def get_tags_for_gcr_image(registry: str, repo: str) -> OrderedDict:
     full_repo = registry + '/' + repo
     gcp_project = repo.split('/')[0]
     cmd = ['gcloud', 'container', 'images', 'list-tags', full_repo, '--project', gcp_project, '--format', 'json']
     gcr_response = json.loads(subprocess.check_output(cmd).decode('utf-8'))
-    response = {}
+    response = OrderedDict()
     for img_tag in gcr_response:
         if 'timestamp' in img_tag:
             timestamp = parse_docker_timestamp(img_tag['timestamp']['datetime'])
@@ -57,8 +57,8 @@ def get_tags_for_gcr_image(registry: str, repo: str) -> Dict[str, int]:
     return response
 
 
-def get_tags_for_docker_hub_image(repo: str) -> Dict[str, int]:
-    response = {}
+def get_tags_for_docker_hub_image(repo: str) -> OrderedDict:
+    response = OrderedDict()
     if '/' not in repo:
         repo = 'library/' + repo
     api_url = 'https://registry.hub.docker.com/v2/repositories/{repo}/tags?page_size=256'.format(repo=repo)
@@ -69,8 +69,8 @@ def get_tags_for_docker_hub_image(repo: str) -> Dict[str, int]:
     return response
 
 
-def get_tags_for_docker_v2_registry(registry: str, repo: str) -> Dict[str, int]:
-    response = {}
+def get_tags_for_docker_v2_registry(registry: str, repo: str) -> OrderedDict:
+    response = OrderedDict()
     api_url = 'https://{registry}/v2/{repo}/tags/list'.format(registry=registry, repo=repo)
     registry_response = requests.get(api_url).json()
     if 'tags' in registry_response:
@@ -83,7 +83,7 @@ def get_tags_for_docker_v2_registry(registry: str, repo: str) -> Dict[str, int]:
     return response
 
 
-def get_tags_for_image(full_repo: str) -> Dict[str, int]:
+def get_tags_for_image(full_repo: str) -> OrderedDict:
     registry, repo = parse_image_repo(full_repo)
     if registry.endswith('gcr.io'):
         tags = get_tags_for_gcr_image(registry, repo)
