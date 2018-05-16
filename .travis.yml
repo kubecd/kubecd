@@ -13,18 +13,18 @@ script:
   - pytest
 deploy:
   - provider: script
-    script:
-      - docker build -t zedge/kubecd:latest .
-      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - docker push zedge/kubecd:latest
+    script: |
+      docker build -t zedge/kubecd:latest .
+      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      docker push zedge/kubecd:latest
     on:
       branch: master
       python: '3.5'
 #  - provider: script
-#    script:
-#      - docker build -t zedge/kubecd:$TRAVIS_TAG .
-#      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-#      - docker push zedge/kubecd:$TRAVIS_TAG
+#    script: |
+#      docker build -t zedge/kubecd:$TRAVIS_TAG .
+#      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+#      docker push zedge/kubecd:$TRAVIS_TAG
 #    on:
 #      tags: true
 #      python: '3.5'
