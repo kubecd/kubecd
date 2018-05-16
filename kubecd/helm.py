@@ -20,7 +20,7 @@ def inspect(chart_reference: str, chart_version: str) -> str:
     return output
 
 
-def deploy_commands(env: model.Environment, dry_run=False, limit_to_release=None) -> List[List[str]]:
+def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to_release=None) -> List[List[str]]:
     commands = []
     if limit_to_release is None:
         for resource_file in env.all_resource_files:
@@ -32,24 +32,17 @@ def deploy_commands(env: model.Environment, dry_run=False, limit_to_release=None
     for release in env._all_releases:
         if not limit_to_release or release.name == limit_to_release:
             rel_file = release.from_file
-            commands.append(generate_helm_command_argv(release, env, release_file=rel_file, dry_run=dry_run))
+            commands.append(generate_helm_install_argv(
+                release, env, release_file=rel_file, dry_run=dry_run, debug=debug))
     return commands
 
 
-def generate_helm_command_argv(rel: model.Release,
-                               env: model.Environment,
-                               release_file: str,
-                               dry_run: bool = False) -> List[str]:
-    chart_arg = rel.chart.reference
-    if chart_arg is None:
-        chart_arg = resolve_file_path(rel.chart.dir, release_file)
-        if not path.exists(chart_arg):
-            raise ValueError('{}: release "{}" chart.dir "{}" does not exist'.format(
-                release_file, rel.name, chart_arg))
-    argv = ['helm', '--kube-context', 'env:' + env.name, 'upgrade', rel.name, chart_arg, '-i',
-            '--namespace', env.kubeNamespace]
-    if dry_run:
-        argv.append('--dry-run')
+def generate_helm_base_argv(env: model.Environment) -> List[str]:
+    return ['helm', '--kube-context', 'env:{}'.format(env.name)]
+
+
+def generate_helm_values_argv(rel: model.Release, env: model.Environment, release_file: str) -> List[str]:
+    argv = []
     if env.defaultValuesFile:
         def_val_file = resolve_file_path(env.defaultValuesFile, release_file)
         argv.extend(['--values', def_val_file])
@@ -62,6 +55,39 @@ def generate_helm_command_argv(rel: model.Release,
     if rel.values:
         argv.append('--set')
         argv.append(','.join(['='.join(resolve_value(x, env)) for x in rel.values]))
+    return argv
+
+
+def generate_helm_chart_arg(rel: model.Release, release_file: str) -> str:
+    chart_arg = rel.chart.reference
+    if chart_arg is None:
+        chart_arg = resolve_file_path(rel.chart.dir, release_file)
+        if not path.exists(chart_arg):
+            raise ValueError('{}: release "{}" chart.dir "{}" does not exist'.format(
+                release_file, rel.name, chart_arg))
+    return chart_arg
+
+
+def generate_helm_diff_argv(rel: model.Release, env: model.Environment, release_file: str) -> List[str]:
+    argv = generate_helm_base_argv(env)
+    argv.extend(['diff', 'upgrade', rel.name, generate_helm_chart_arg(rel, release_file)])
+    argv.extend(generate_helm_values_argv(rel, env, release_file))
+    return argv
+
+
+def generate_helm_install_argv(rel: model.Release,
+                               env: model.Environment,
+                               release_file: str,
+                               dry_run: bool = False,
+                               debug: bool = False) -> List[str]:
+    chart_arg = generate_helm_chart_arg(rel, release_file)
+    argv = generate_helm_base_argv(env)
+    argv.extend(['upgrade', rel.name, chart_arg, '-i', '--namespace', env.kubeNamespace])
+    argv.extend(generate_helm_values_argv(rel, env, release_file))
+    if dry_run:
+        argv.append('--dry-run')
+    if debug:
+        argv.append('--debug')
     return argv
 
 

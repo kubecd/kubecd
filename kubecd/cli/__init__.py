@@ -43,11 +43,17 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
 
     apply = s.add_parser('apply', help='apply changes to Kubernetes')
     apply.add_argument('--dry-run', '-n', help='dry run mode, only print commands', action='store_true', default=False)
+    apply.add_argument('--debug', help='run helm with --debug', action='store_true', default=False)
     apply.add_argument('--release', '-r', help='apply only this release')
     apply.add_argument('--all-environments', '-a', help='apply all environments', action='store_true', default=False)
     apply.add_argument('env', nargs='?',
                        help='name of environment to apply, must be specified unless --all-environments is')
     apply.set_defaults(func=apply_env)
+
+    diff = s.add_parser('diff', help='show diffs between running and git release')
+    diff.add_argument('--release', '-r', help='which release to diff')
+    diff.add_argument('env', nargs='?', help='name of environment')
+    diff.set_defaults(func=diff_release)
 
     poll_p = s.add_parser('poll', help='poll for new images in registries')
     poll_p.add_argument('--patch', '-p', help='patch releases.yaml files with updated version', action='store_true')
@@ -82,6 +88,16 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     return p
 
 
+def diff_release(config_file: str, release: str, env: str, **kwargs):
+    kcd_config = load_model(config_file)
+    e = kcd_config.env_by_name(env)
+    r = e.named_release(release)
+    cmd = helm.generate_helm_diff_argv(r, e, r.from_file)
+    s = subprocess.call(cmd)
+    if s != 0:
+        raise CliError('Command "{cmd}" exited with status {status}'.format(cmd=' '.join(cmd), status=s))
+
+
 def observe_new_image(config_file: str, image: str, patch: bool, submit_pr: bool, **kwargs):
     kcd_config = load_model(config_file)
     image_repo, image_tag = image.split(':')
@@ -105,13 +121,13 @@ def print_completion(prog, **kwargs):
         sys.stdout.write(argcomplete.shellcode(prog, shell=shell))
 
 
-def apply_env(config_file, dry_run, all_environments=False, env=None, release=None, **kwargs):
+def apply_env(config_file, dry_run, debug, all_environments=False, env=None, release=None, **kwargs):
     target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
     commands_to_run = model.config().init_commands()
     for environment in target_envs:
         logger.info('Collecting commands for environment "%s"', environment.name)
         init_cmds = environment.init_commands(dry_run=dry_run)
-        deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_release=release)
+        deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_release=release, debug=debug)
         if len(deploy_cmds) > 0:
             commands_to_run.extend(init_cmds)
             commands_to_run.extend(deploy_cmds)
