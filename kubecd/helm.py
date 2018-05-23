@@ -43,12 +43,13 @@ def generate_helm_base_argv(env: model.Environment) -> List[str]:
 
 def generate_helm_values_argv(rel: model.Release, env: model.Environment, release_file: str) -> List[str]:
     argv = []
-    if env.defaultValuesFile:
-        def_val_file = resolve_file_path(env.defaultValuesFile, release_file)
-        argv.extend(['--values', def_val_file])
-    if env.defaultValues:
-        argv.append('--set')
-        argv.append(','.join(['='.join(resolve_value(x, env)) for x in env.defaultValues]))
+    if not rel.skipDefaultValues:
+        if env.defaultValuesFile:
+            def_val_file = resolve_file_path(env.defaultValuesFile, release_file)
+            argv.extend(['--values', def_val_file])
+        if env.defaultValues:
+            argv.append('--set')
+            argv.append(','.join(['='.join(resolve_value(x, env)) for x in env.defaultValues]))
     if rel.valuesFile:
         val_file = resolve_file_path(rel.valuesFile, release_file)
         argv.extend(['--values', val_file])

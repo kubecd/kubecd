@@ -56,6 +56,7 @@ struct Release {
     4: optional list<ChartValue> values;
     5: optional DeploymentTrigger trigger;
     6: optional list<DeploymentTrigger> triggers;
+    7: optional bool skipDefaultValues;
 }
 
 struct KubernetesResourceRef {
