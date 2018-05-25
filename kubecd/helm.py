@@ -29,6 +29,10 @@ def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to
                 cmd.append('--dry-run')
             cmd.extend(['-f', resource_file])
             commands.append(cmd)
+    else:
+        for r in limit_to_releases:
+            if env.named_release(r) is None:
+                raise ValueError('no such release in env:{}: {}'.format(env.name, r))
     for release in env.all_releases:
         if limit_to_releases is None or release.name in limit_to_releases:
             rel_file = release.from_file

@@ -128,7 +128,10 @@ def apply_env(config_file, dry_run, debug, all_environments=False, env=None, rel
     for environment in target_envs:
         logger.info('Collecting commands for environment "%s"', environment.name)
         init_cmds = environment.init_commands(dry_run=dry_run)
-        deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_releases=releases, debug=debug)
+        try:
+            deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_releases=releases, debug=debug)
+        except ValueError as e:
+            raise CliError(str(e))
         if len(deploy_cmds) > 0:
             commands_to_run.extend(init_cmds)
             commands_to_run.extend(deploy_cmds)
