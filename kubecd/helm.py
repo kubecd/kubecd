@@ -59,19 +59,19 @@ def generate_helm_values_argv(rel: model.Release, env: model.Environment, releas
     return argv
 
 
-def generate_helm_chart_arg(rel: model.Release, release_file: str) -> str:
-    chart_arg = rel.chart.reference
-    if chart_arg is None:
-        chart_arg = resolve_file_path(rel.chart.dir, release_file)
-        if not path.exists(chart_arg):
+def generate_helm_chart_args(rel: model.Release, release_file: str) -> List[str]:
+    if rel.chart.reference is None:
+        dir = resolve_file_path(rel.chart.dir, release_file)
+        if not path.exists(dir):
             raise ValueError('{}: release "{}" chart.dir "{}" does not exist'.format(
-                release_file, rel.name, chart_arg))
-    return chart_arg
+                release_file, rel.name, dir))
+        return [dir]
+    return [rel.chart.reference, '--version', rel.chart.version]
 
 
 def generate_helm_diff_argv(rel: model.Release, env: model.Environment, release_file: str) -> List[str]:
     argv = generate_helm_base_argv(env)
-    argv.extend(['diff', 'upgrade', rel.name, generate_helm_chart_arg(rel, release_file)])
+    argv.extend(['diff', 'upgrade', rel.name, generate_helm_chart_args(rel, release_file)])
     argv.extend(generate_helm_values_argv(rel, env, release_file))
     return argv
 
@@ -81,9 +81,11 @@ def generate_helm_install_argv(rel: model.Release,
                                release_file: str,
                                dry_run: bool = False,
                                debug: bool = False) -> List[str]:
-    chart_arg = generate_helm_chart_arg(rel, release_file)
+    chart_args = generate_helm_chart_args(rel, release_file)
     argv = generate_helm_base_argv(env)
-    argv.extend(['upgrade', rel.name, chart_arg, '-i', '--namespace', env.kubeNamespace])
+    argv.extend(['upgrade', rel.name])
+    argv.extend(chart_args)
+    argv.extend(['-i', '--namespace', env.kubeNamespace])
     argv.extend(generate_helm_values_argv(rel, env, release_file))
     if dry_run:
         argv.append('--dry-run')
