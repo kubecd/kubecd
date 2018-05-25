@@ -14,7 +14,7 @@ from ruamel.yaml import YAMLError
 
 from kubecd import __version__, helm, updates, github
 from kubecd import model
-from kubecd.updates import find_updates_for_env, find_updates_for_release
+from kubecd.updates import find_updates_for_env, find_updates_for_releases
 
 t = Terminal()
 logger = logging.getLogger(__name__)
@@ -44,20 +44,20 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     apply = s.add_parser('apply', help='apply changes to Kubernetes')
     apply.add_argument('--dry-run', '-n', help='dry run mode, only print commands', action='store_true', default=False)
     apply.add_argument('--debug', help='run helm with --debug', action='store_true', default=False)
-    apply.add_argument('--release', '-r', help='apply only this release')
+    apply.add_argument('--releases', '-r', help='apply only these releases', action='append')
     apply.add_argument('--all-environments', '-a', help='apply all environments', action='store_true', default=False)
     apply.add_argument('env', nargs='?',
                        help='name of environment to apply, must be specified unless --all-environments is')
     apply.set_defaults(func=apply_env)
 
-    diff = s.add_parser('diff', help='show diffs between running and git release')
-    diff.add_argument('--release', '-r', help='which release to diff')
-    diff.add_argument('env', nargs='?', help='name of environment')
-    diff.set_defaults(func=diff_release)
+    # diff = s.add_parser('diff', help='show diffs between running and git release')
+    # diff.add_argument('--releases', '-r', help='which releases to diff', action='append')
+    # diff.add_argument('env', nargs='?', help='name of environment')
+    # diff.set_defaults(func=diff_release)
 
     poll_p = s.add_parser('poll', help='poll for new images in registries')
     poll_p.add_argument('--patch', '-p', help='patch releases.yaml files with updated version', action='store_true')
-    poll_p.add_argument('--release', '-r', help='poll this specific release')
+    poll_p.add_argument('--releases', '-r', help='poll this specific release', action='append')
     poll_p.add_argument('--image', '-i', help='poll releases using this image')
     poll_p.add_argument('env', nargs='?', help='name of environment to poll')
     poll_p.set_defaults(func=poll_registries)
@@ -88,14 +88,15 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     return p
 
 
-def diff_release(config_file: str, release: str, env: str, **kwargs):
+def diff_release(config_file: str, releases: List[str], env: str, **kwargs):
     kcd_config = load_model(config_file)
     e = kcd_config.env_by_name(env)
-    r = e.named_release(release)
-    cmd = helm.generate_helm_diff_argv(r, e, r.from_file)
-    s = subprocess.call(cmd)
-    if s != 0:
-        raise CliError('Command "{cmd}" exited with status {status}'.format(cmd=' '.join(cmd), status=s))
+    for release in releases:
+        r = e.named_release(release)
+        cmd = helm.generate_helm_diff_argv(r, e, r.from_file)
+        s = subprocess.call(cmd)
+        if s != 0:
+            raise CliError('Command "{cmd}" exited with status {status}'.format(cmd=' '.join(cmd), status=s))
 
 
 def observe_new_image(config_file: str, image: str, patch: bool, submit_pr: bool, **kwargs):
@@ -121,13 +122,13 @@ def print_completion(prog, **kwargs):
         sys.stdout.write(argcomplete.shellcode(prog, shell=shell))
 
 
-def apply_env(config_file, dry_run, debug, all_environments=False, env=None, release=None, **kwargs):
+def apply_env(config_file, dry_run, debug, all_environments=False, env=None, releases=None, **kwargs):
     target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
     commands_to_run = model.config().init_commands()
     for environment in target_envs:
         logger.info('Collecting commands for environment "%s"', environment.name)
         init_cmds = environment.init_commands(dry_run=dry_run)
-        deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_release=release, debug=debug)
+        deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_releases=releases, debug=debug)
         if len(deploy_cmds) > 0:
             commands_to_run.extend(init_cmds)
             commands_to_run.extend(deploy_cmds)
@@ -164,18 +165,16 @@ def list_kind(config_file, kind, **kwargs):
         raise CliError('unknown kind "{}"'.format(kind))
 
 
-def poll_registries(config_file, all_environments=False, env=None, release=None, patch=False, **kwargs):
+def poll_registries(config_file, all_environments=False, env=None, releases=None, patch=False, **kwargs):
     target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
     for environment in target_envs:
-        if release is None:
+        if releases is None:
             logger.info('polling environment: "%s"', environment.name)
             file_updates = find_updates_for_env(environment)
         else:
-            release_obj = environment.named_release(release)
-            if release_obj is None:
-                raise CliError('no release called "{} in environment "{}""'.format(release, env))
-            logger.info('polling release: "%s/%s"', environment.name, release_obj.name)
-            file_updates = find_updates_for_release(release_obj, environment)
+            release_objs = [environment.named_release(r) for r in releases]
+            logger.info('polling env:%s releases: %s', environment.name, ' '.join(releases))
+            file_updates = find_updates_for_releases(release_objs, environment)
         for release_file, update_list in file_updates.items():
             for update in update_list:
                 print(

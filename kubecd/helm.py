@@ -20,17 +20,17 @@ def inspect(chart_reference: str, chart_version: str) -> str:
     return output
 
 
-def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to_release=None) -> List[List[str]]:
+def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to_releases=None) -> List[List[str]]:
     commands = []
-    if limit_to_release is None:
+    if limit_to_releases is None:
         for resource_file in env.all_resource_files:
             cmd = ['kubectl', '--context', 'env:{}'.format(env.name), 'apply']
             if dry_run:
                 cmd.append('--dry-run')
             cmd.extend(['-f', resource_file])
             commands.append(cmd)
-    for release in env._all_releases:
-        if not limit_to_release or release.name == limit_to_release:
+    for release in env.all_releases:
+        if limit_to_releases is None or release.name in limit_to_releases:
             rel_file = release.from_file
             commands.append(generate_helm_install_argv(
                 release, env, release_file=rel_file, dry_run=dry_run, debug=debug))
