@@ -9,6 +9,8 @@ from .thriftutils import load_yaml_with_schema
 from .utils import resolve_file_path
 
 _config = None
+KUBECTL_COMPONENT = 'Kube'
+HELM_COMPONENT = 'Helm'
 
 
 class ConfigError(BaseException):
@@ -41,15 +43,33 @@ class Release(ttypes.Release):
         return self._from_file
 
 
+def convert_releases_to_module(rs: ttypes.Releases, fn: str) -> ttypes.KubecdModule:
+    return ttypes.KubecdModule(name=path.splitext(path.basename(fn))[0],
+                               components=[convert_release_to_component(r) for r in rs.releases])
+
+
+def convert_release_to_component(r: ttypes.Release) -> ttypes.KubecdComponent:
+    return ttypes.KubecdComponent(name=r.name, type=HELM_COMPONENT, helm=r)
+
+
+def convert_resource_files_to_component(rf: List[str]) -> ttypes.KubecdComponent:
+    return ttypes.KubecdComponent(name='resources', type=KUBECTL_COMPONENT, resourceFiles=rf)
+
+
 class Environment(ttypes.Environment):
     # _from_file: str
     # _all_releases: List[Release]
     # _all_resource_files: List[str]
+    # _all_modules: List[KubecdModule]
+    # _all_components: List[KubecdComponent]
 
     def __init__(self, data: ttypes.Environment, from_file: str):
         self._from_file = path.abspath(from_file)
         self._all_releases = []
         self._all_resource_files = []
+        self._all_modules = []
+        self._all_components = []
+
         super(Environment, self).__init__(**data.__dict__)
         issues = self.sanity_check()
         if len(issues) > 0:
@@ -105,19 +125,19 @@ class Cluster(ttypes.Cluster):
         return self._from_file
 
 
-class KubeCDConfig(ttypes.KubeCDConfig):
+class KubecdConfig(ttypes.KubecdConfig):
     # _environments: List[Environment]
     # _index: Dict[str, Environment] = {}
     # _from_file: str
 
-    def __init__(self, data: ttypes.KubeCDConfig, from_file: str):
+    def __init__(self, data: ttypes.KubecdConfig, from_file: str):
         self._environments = [Environment(x, from_file) for x in data.environments]
         self._clusters = [Cluster(x, from_file) for x in data.clusters]
         self._from_file = from_file
         self._env_index = {}
         self._cluster_index = {}
         self._image_index = None
-        super(KubeCDConfig, self).__init__(**data.__dict__)
+        super(KubecdConfig, self).__init__(**data.__dict__)
         issues = self.sanity_check()
         if len(issues) > 0:
             raise ValueError('Issues found:\n\t{}'.format('\n\t'.join(issues)))
@@ -176,9 +196,9 @@ class KubeCDConfig(ttypes.KubeCDConfig):
         return self._from_file
 
 
-def load(file_name: str) -> KubeCDConfig:
+def load(file_name: str) -> KubecdConfig:
     global _config
-    _config = KubeCDConfig(load_yaml_with_schema(file_name, ttypes.KubeCDConfig), from_file=file_name)
+    _config = KubecdConfig(load_yaml_with_schema(file_name, ttypes.KubecdConfig), from_file=file_name)
     return _config
 
 
@@ -207,6 +227,6 @@ def releases_subscribing_to_image(image: str):
     pass
 
 
-def config() -> KubeCDConfig:
+def config() -> KubecdConfig:
     return _config
 

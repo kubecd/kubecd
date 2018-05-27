@@ -64,6 +64,23 @@ struct KubernetesResourceRef {
     2: optional string name;  // optionally with a "namespace/" prefix
 }
 
+struct KubecdResource {
+    1: optional string name;
+    2: optional string file;
+}
+
+struct KubecdComponent {
+    1: optional string name;
+    2: optional string type;  // "Helm", "Kube"
+    3: optional list<string> resourceFiles;  // for type=="Kube"
+    4: optional Release helm;  // for type=="Helm"
+}
+
+struct KubecdModule {
+    1: optional string name;
+    2: optional list<KubecdComponent> components;
+}
+
 struct Releases {
     1: optional list<string> resourceFiles;
     2: optional list<Release> releases;
@@ -120,7 +137,7 @@ struct HelmRepo {
     5: optional string keyFile;
 }
 
-struct KubeCDConfig {
+struct KubecdConfig {
     1: optional list<Cluster> clusters;
     2: optional list<Environment> environments;
     3: optional list<HelmRepo> helmRepos;
