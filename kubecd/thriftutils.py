@@ -1,19 +1,22 @@
 from thrift.Thrift import TType
 
 
+class SchemaError(BaseException):
+    pass
+
+
 def load_yaml_with_schema(yaml_file: str, schema):
     with open(yaml_file, 'r') as fd:
         from ruamel import yaml
         try:
             return to_thrift_object(yaml.safe_load(fd), schema, '')
-        except ValueError as e:
-            print(e.args)
-            raise ValueError('in file {}: {}'.format(yaml_file, str(e))) from e
+        except SchemaError as e:
+            raise SchemaError('{}: {}'.format(yaml_file, str(e))) from e
 
 
 def to_thrift_object(in_dict: dict, schema, obj_path: str):
     if not isinstance(in_dict, dict):
-        raise ValueError('unexpected type at "{}", expected dict, found {}'.format(obj_path, type(in_dict).__name__))
+        raise SchemaError('unexpected type at "{}", expected dict, found {}'.format(obj_path, type(in_dict).__name__))
 
     ctor_args = {}
     for field_spec in schema.thrift_spec:
@@ -29,7 +32,7 @@ def to_thrift_object(in_dict: dict, schema, obj_path: str):
             ctor_args[t_field] = to_thrift_type(in_dict[t_field], t_type, field_spec[3], new_path)
     extra_keys = set(in_dict.keys()) - set(ctor_args.keys())
     if len(extra_keys) > 0:
-        raise ValueError('extraneous keys for "{}": {}'.format(schema.__name__, ', '.join(extra_keys)))
+        raise SchemaError('extraneous keys for "{}": {}'.format(schema.__name__, ', '.join(extra_keys)))
 
     return schema(**ctor_args)
 
@@ -40,8 +43,9 @@ def to_thrift_type(value, t_type, t_subtype, obj_path: str):
     :param value: python value
     :param t_type:
     :param t_subtype:
+    :param obj_path:
     :return: Thrift-ified version of the input value
-    :raises ValueError: if the input value does not match the schema
+    :raises SchemaError: if the input value does not match the schema
     """
     if t_type == TType.I08 or t_type == TType.I16 or t_type == TType.I32 or t_type == TType.I64:
         return int(value)
@@ -56,14 +60,14 @@ def to_thrift_type(value, t_type, t_subtype, obj_path: str):
         return to_thrift_object(value, t_subtype[0], obj_path)
     elif t_type == TType.LIST:
         if not isinstance(value, list):
-            raise ValueError('value is not a list')
+            raise SchemaError('value is not a list at %s' % obj_path)
         return to_thrift_list(value, t_subtype, obj_path)
     elif t_type == TType.MAP:
         if not isinstance(value, dict):
-            raise ValueError('value is not a dict')
+            raise SchemaError('value is not a dict at %s' % obj_path)
         return to_thrift_map(value, t_subtype, obj_path)
     else:
-        raise ValueError('unknown or unsupported thrift type %d' % t_type)
+        raise SchemaError('unknown or unsupported thrift type %d at %s' % (t_type, obj_path))
 
 
 def to_thrift_list(in_list: list, spec: tuple, list_path: str):

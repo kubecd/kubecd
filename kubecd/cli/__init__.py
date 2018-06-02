@@ -14,6 +14,7 @@ from ruamel.yaml import YAMLError
 
 from kubecd import __version__, helm, updates, github
 from kubecd import model
+from kubecd.thriftutils import SchemaError
 from kubecd.updates import find_updates_for_env, find_updates_for_releases
 
 t = Terminal()
@@ -247,6 +248,8 @@ def load_model(file_name: str):
         return model.load(file_name)
     except FileNotFoundError as e:
         raise CliError('file not found: {}'.format(e.filename))
+    except SchemaError as e:
+        raise CliError(e)
 
 
 def load_yaml(file_name: str):
