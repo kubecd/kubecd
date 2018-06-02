@@ -20,15 +20,25 @@ def inspect(chart_reference: str, chart_version: str) -> str:
     return output
 
 
+def repo_setup_commands(repos: List[ttypes.HelmRepo]) -> List[List[str]]:
+    cmds = [['helm', 'repo', 'add', repo.name, repo.url] for repo in repos]
+    cmds.append(['helm repo update'])
+    return cmds
+
+
+def kubectl_apply_command(resource_files: List[str], dry_run: bool, env_name: str) -> List[str]:
+    cmd = ['kubectl', '--context', 'env:{}'.format(env_name), 'apply']
+    if dry_run:
+        cmd.append('--dry-run')
+    for resource_file in resource_files:
+        cmd.extend(['-f', resource_file])
+    return cmd
+
+
 def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to_releases=None) -> List[List[str]]:
     commands = []
     if limit_to_releases is None:
-        for resource_file in env.all_resource_files:
-            cmd = ['kubectl', '--context', 'env:{}'.format(env.name), 'apply']
-            if dry_run:
-                cmd.append('--dry-run')
-            cmd.extend(['-f', resource_file])
-            commands.append(cmd)
+        commands.append(kubectl_apply_command(env.all_resource_files, dry_run, env.name))
     else:
         for r in limit_to_releases:
             if env.named_release(r) is None:
@@ -36,8 +46,12 @@ def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to
     for release in env.all_releases:
         if limit_to_releases is None or release.name in limit_to_releases:
             rel_file = release.from_file
-            commands.append(generate_helm_install_argv(
-                release, env, release_file=rel_file, dry_run=dry_run, debug=debug))
+            if release.chart:
+                commands.append(generate_helm_install_argv(
+                    release, env, release_file=rel_file, dry_run=dry_run, debug=debug))
+            elif release.resourceFiles:
+                abs_files = [resolve_file_path(p, rel_file) for p in release.resourceFiles]
+                commands.append(kubectl_apply_command(abs_files, dry_run, env.name))
     return commands
 
 

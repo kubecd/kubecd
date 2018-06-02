@@ -2,6 +2,8 @@ from collections import defaultdict
 from os import path
 from typing import List, Union, Dict
 
+import logging
+
 from . import helm
 from .gen_py import ttypes
 from .providers import generate_environment_init_command
@@ -9,8 +11,6 @@ from .thriftutils import load_yaml_with_schema
 from .utils import resolve_file_path
 
 _config = None
-KUBECTL_COMPONENT = 'Kube'
-HELM_COMPONENT = 'Helm'
 
 
 class ConfigError(BaseException):
@@ -23,19 +23,27 @@ class Release(ttypes.Release):
     def __init__(self, data: ttypes.Release, from_file: str):
         self._from_file = from_file
         super(Release, self).__init__(**data.__dict__)
-        issues = self.sanity_check()
+        issues = self._sanity_check()
         if len(issues) > 0:
             raise ValueError('release {} issues found: {}'.format(self.name, ', '.join(issues)))
+        self._compat_update()
 
-    def sanity_check(self):
-        issues = []
-        if self.chart.reference is not None and self.chart.version is None:
-            issues.append('must have a chart.version'.format(self.chart.name))
-        if self.trigger and self.triggers:
-            issues.append('must define only one of "trigger" or "triggers"')
+    def _compat_update(self):
         if self.trigger:
             self.triggers = [self.trigger]
             self.trigger = None
+
+    def _sanity_check(self):
+        issues = []
+        if self.chart is None and self.resourceFiles is None:
+            issues.append('must define either "chart" or "resourceFiles"')
+        if self.chart is not None and self.resourceFiles is not None:
+            issues.append('must define only one of "chart" or "resourceFiles"')
+        if self.chart is not None:
+            if self.chart.reference is not None and self.chart.version is None:
+                issues.append('must have a chart.version'.format(self.chart.name))
+        if self.trigger and self.triggers:
+            issues.append('must define only one of "trigger" or "triggers"')
         return issues
 
     @property
@@ -43,47 +51,32 @@ class Release(ttypes.Release):
         return self._from_file
 
 
-def convert_releases_to_module(rs: ttypes.Releases, fn: str) -> ttypes.KubecdModule:
-    return ttypes.KubecdModule(name=path.splitext(path.basename(fn))[0],
-                               components=[convert_release_to_component(r) for r in rs.releases])
-
-
-def convert_release_to_component(r: ttypes.Release) -> ttypes.KubecdComponent:
-    return ttypes.KubecdComponent(name=r.name, type=HELM_COMPONENT, helm=r)
-
-
-def convert_resource_files_to_component(rf: List[str]) -> ttypes.KubecdComponent:
-    return ttypes.KubecdComponent(name='resources', type=KUBECTL_COMPONENT, resourceFiles=rf)
-
-
 class Environment(ttypes.Environment):
     # _from_file: str
     # _all_releases: List[Release]
     # _all_resource_files: List[str]
-    # _all_modules: List[KubecdModule]
-    # _all_components: List[KubecdComponent]
 
     def __init__(self, data: ttypes.Environment, from_file: str):
         self._from_file = path.abspath(from_file)
         self._all_releases = []
         self._all_resource_files = []
-        self._all_modules = []
-        self._all_components = []
 
         super(Environment, self).__init__(**data.__dict__)
-        issues = self.sanity_check()
+        issues = self._sanity_check()
         if len(issues) > 0:
             raise ValueError('Issues found:\n\t{}'.format('\n\t'.join(issues)))
         for rel_file in self.releasesFiles:
             abs_file = resolve_file_path(rel_file, relative_to_file=self._from_file)
             releases = load_yaml_with_schema(abs_file, ttypes.Releases)
             if releases.resourceFiles is not None:
+                logging.warning('%s: resourceFiles at the top level are deprecated, move them to the a release',
+                                abs_file)
                 abs_files = [resolve_file_path(x, relative_to_file=abs_file) for x in releases.resourceFiles]
                 self._all_resource_files.extend(abs_files)
             for rel in releases.releases:
                 self._all_releases.append(Release(rel, from_file=abs_file))
 
-    def sanity_check(self):
+    def _sanity_check(self):
         counts = defaultdict(int)
         issues = []
         for env in self.all_releases:
@@ -138,7 +131,7 @@ class KubecdConfig(ttypes.KubecdConfig):
         self._cluster_index = {}
         self._image_index = None
         super(KubecdConfig, self).__init__(**data.__dict__)
-        issues = self.sanity_check()
+        issues = self._sanity_check()
         if len(issues) > 0:
             raise ValueError('Issues found:\n\t{}'.format('\n\t'.join(issues)))
         for env in self._environments:
@@ -149,7 +142,7 @@ class KubecdConfig(ttypes.KubecdConfig):
     def __iter__(self):
         return iter(self._environments)
 
-    def sanity_check(self):
+    def _sanity_check(self):
         counts = defaultdict(int)
         issues = []
         for env in self._environments:
@@ -167,8 +160,7 @@ class KubecdConfig(ttypes.KubecdConfig):
     def init_commands(self) -> List[List[str]]:
         commands = []
         if self.helmRepos:
-            for repo in self.helmRepos:
-                commands.append(['helm', 'repo', 'add', repo.name, repo.url])
+            commands.extend(helm.repo_setup_commands(self.helmRepos))
         return commands
 
     @property

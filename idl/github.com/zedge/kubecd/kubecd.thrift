@@ -35,12 +35,17 @@ struct ImageTrigger {
     1: optional string tagValue = "image.tag";
     2: optional string repoValue = "image.repository";
     3: optional string repoPrefixValue = "image.prefix";
-    4: optional string track = "Newest"; // PatchLevel, MinorVersion, MajorVersion, Newest
+    4: optional string track;  // one of "PatchLevel", "MinorVersion", "MajorVersion", "Newest"
+}
+
+struct HelmTrigger {
+    1: optional string track;  // one of "PatchLevel", "MinorVersion", "MajorVersion", "Newest"
 }
 
 union DeploymentTrigger {
     1: optional GithubTrigger github;
     2: optional ImageTrigger image;
+    3: optional HelmTrigger helm;
 }
 
 struct Chart {
@@ -57,28 +62,12 @@ struct Release {
     5: optional DeploymentTrigger trigger;
     6: optional list<DeploymentTrigger> triggers;
     7: optional bool skipDefaultValues;
+    8: optional list<string> resourceFiles;
 }
 
 struct KubernetesResourceRef {
     1: optional string kind;
     2: optional string name;  // optionally with a "namespace/" prefix
-}
-
-struct KubecdResource {
-    1: optional string name;
-    2: optional string file;
-}
-
-struct KubecdComponent {
-    1: optional string name;
-    2: optional string type;  // "Helm", "Kube"
-    3: optional list<string> resourceFiles;  // for type=="Kube"
-    4: optional Release helm;  // for type=="Helm"
-}
-
-struct KubecdModule {
-    1: optional string name;
-    2: optional list<KubecdComponent> components;
 }
 
 struct Releases {
