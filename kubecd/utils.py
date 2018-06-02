@@ -17,3 +17,7 @@ def resolve_file_path(file_path: str, relative_to_file: str = None, relative_to_
     if relative_to_dir is None:
         raise ValueError('resolve_file_path requires either relative_to_file or relative_to_dir arg!')
     return path.join(relative_to_dir, file_path)
+
+
+def kube_context(env_name: str):
+    return 'env:' + env_name

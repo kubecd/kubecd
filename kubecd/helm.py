@@ -5,6 +5,7 @@ from typing import List, Union
 
 import ruamel.yaml
 
+from .utils import kube_context
 from . import model
 from .gen_py import ttypes
 from .utils import resolve_file_path
@@ -27,7 +28,7 @@ def repo_setup_commands(repos: List[ttypes.HelmRepo]) -> List[List[str]]:
 
 
 def kubectl_apply_command(resource_files: List[str], dry_run: bool, env_name: str) -> List[str]:
-    cmd = ['kubectl', '--context', 'env:{}'.format(env_name), 'apply']
+    cmd = ['kubectl', '--context', kube_context(env_name), 'apply']
     if dry_run:
         cmd.append('--dry-run')
     for resource_file in resource_files:
@@ -38,7 +39,8 @@ def kubectl_apply_command(resource_files: List[str], dry_run: bool, env_name: st
 def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to_releases=None) -> List[List[str]]:
     commands = []
     if limit_to_releases is None:
-        commands.append(kubectl_apply_command(env.all_resource_files, dry_run, env.name))
+        if len(env.all_resource_files) > 0:
+            commands.append(kubectl_apply_command(env.all_resource_files, dry_run, env.name))
     else:
         for r in limit_to_releases:
             if env.named_release(r) is None:
@@ -56,7 +58,7 @@ def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to
 
 
 def generate_helm_base_argv(env: model.Environment) -> List[str]:
-    return ['helm', '--kube-context', 'env:{}'.format(env.name)]
+    return ['helm', '--kube-context', kube_context(env.name)]
 
 
 def generate_helm_values_argv(rel: model.Release, env: model.Environment, release_file: str) -> List[str]:

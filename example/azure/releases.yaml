@@ -1,0 +1,5 @@
+releases:
+  - name: redis
+    chart:
+      reference: stable/redis
+      version: "3.3.2"

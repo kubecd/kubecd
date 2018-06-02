@@ -82,12 +82,18 @@ struct GkeProvider {
     3: optional string zone;
 }
 
+struct AksProvider {
+    1: optional string resourceGroup;
+    2: optional string clusterName;
+}
+
 struct MinikubeProvider {
 }
 
 union Provider {
     1: optional GkeProvider gke;
     2: optional MinikubeProvider minikube;
+    3: optional AksProvider aks;
 }
 
 struct ClusterParameter {
@@ -130,4 +136,5 @@ struct KubecdConfig {
     1: optional list<Cluster> clusters;
     2: optional list<Environment> environments;
     3: optional list<HelmRepo> helmRepos;
+    4: optional string kubeConfig;
 }

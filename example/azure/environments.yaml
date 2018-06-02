@@ -1,0 +1,14 @@
+clusters:
+  - name: azure
+    provider:
+      aks:
+        resourceGroup: myResourceGroup
+        clusterName: myAKSCluster
+
+environments:
+  - name: test
+    clusterName: azure
+    kubeNamespace: default
+    releasesFiles:
+      - releases.yaml
+    defaultValues: []
