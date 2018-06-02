@@ -22,7 +22,7 @@ def inspect(chart_reference: str, chart_version: str) -> str:
 
 def repo_setup_commands(repos: List[ttypes.HelmRepo]) -> List[List[str]]:
     cmds = [['helm', 'repo', 'add', repo.name, repo.url] for repo in repos]
-    cmds.append(['helm repo update'])
+    cmds.append(['helm', 'repo', 'update'])
     return cmds
 
 
