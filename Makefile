@@ -33,3 +33,6 @@ test: thrift-gen
 
 release: clean test
 	python setup.py release
+
+upload:
+	python setup.py clean sdist upload
