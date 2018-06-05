@@ -86,7 +86,17 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
 
     completion_p = s.add_parser('completion', help='print shell completion script')
     completion_p.set_defaults(func=print_completion, prog=prog)
+
+    j2y = s.add_parser('json2yaml', help='JSON to YAML conversion utility (stdin/stdout)')
+    j2y.set_defaults(func=json2yaml)
     return p
+
+
+def json2yaml(**kwargs):
+    import json
+    from ruamel import yaml
+    obj = json.load(sys.stdin)
+    yaml.safe_dump(obj, sys.stdout)
 
 
 def diff_release(config_file: str, releases: List[str], env: str, **kwargs):

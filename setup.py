@@ -14,6 +14,7 @@ class ReleaseCommand(Command):
     """
     description = 'tag a new release'
     version = None
+    force = False
     user_options = [
         ('version=', 'v', 'new version'),
         ('force', 'f', 'force push version tag')
