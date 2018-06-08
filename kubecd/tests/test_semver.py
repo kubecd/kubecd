@@ -1,5 +1,3 @@
-from semantic_version import Version
-
 from .. import semver as sut
 
 

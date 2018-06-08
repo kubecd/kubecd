@@ -6,7 +6,7 @@ import logging
 
 from . import helm
 from .gen_py import ttypes
-from .providers import generate_environment_init_command
+from .providers import cluster_init_commands
 from .thriftutils import load_yaml_with_schema
 from .utils import resolve_file_path
 
@@ -99,9 +99,9 @@ class Environment(ttypes.Environment):
     def all_resource_files(self):
         return self._all_resource_files
 
-    def init_commands(self, dry_run=False):
+    def init_commands(self):
         cluster = get_cluster(self.clusterName)
-        return generate_environment_init_command(cluster, self, dry_run)
+        return cluster_init_commands(cluster, self)
 
     @property
     def cluster(self):
@@ -112,6 +112,9 @@ class Cluster(ttypes.Cluster):
     def __init__(self, data: ttypes.Cluster, from_file: str):
         self._from_file = from_file
         super(Cluster, self).__init__(**data.__dict__)
+
+    def __hash__(self) -> int:
+        return hash(self.name)
 
     @property
     def from_file(self):
@@ -151,11 +154,24 @@ class KubecdConfig(ttypes.KubecdConfig):
             counts[env.name] += 1
         return issues
 
-    def env_by_name(self, name: str) -> Environment:
+    def all_clusters(self) -> List[Cluster]:
+        return list(self._cluster_index.values())
+
+    def all_environments(self) -> List[Environment]:
+        return self._environments
+
+    def get_environment(self, name: str) -> Environment:
         return self._env_index[name]
 
-    def cluster_by_name(self, name: str) -> Cluster:
+    def get_cluster(self, name: str) -> Cluster:
         return self._cluster_index[name]
+
+    def environments_in_cluster(self, cluster_name: str) -> List[Environment]:
+        envs = []
+        for env in self.all_environments():
+            if env.clusterName == cluster_name:
+                envs.append(env)
+        return envs
 
     def init_commands(self) -> List[List[str]]:
         commands = []
@@ -194,31 +210,31 @@ def load(file_name: str) -> KubecdConfig:
     return _config
 
 
-def as_list() -> List[Environment]:
-    if _config is None:
-        raise ConfigError('environments not yet loaded')
-    return [x for x in _config]
+def all_environments() -> List[Environment]:
+    return [x for x in config()]
+
+
+def all_clusters() -> List[Cluster]:
+    return list(set([e.cluster for e in all_environments()]))
 
 
 def get_cluster(cluster_name: str) -> Cluster:
-    if _config is None:
-        raise ConfigError('environments not yet loaded')
-    return _config.cluster_by_name(cluster_name)
+    return config().get_cluster(cluster_name)
 
 
 def get_environment(env_name: str) -> Environment:
-    if _config is None:
-        raise ConfigError('environments not yet loaded')
-    return _config.env_by_name(env_name)
+    return config().get_environment(env_name)
 
 
-# def generate_helm_command(rel: Release, env: Environment, release_file: str, dry_run: bool = False) -> str:
-#     return ' '.join([shlex.quote(arg) for arg in generate_helm_command_argv(rel, env, release_file, dry_run)])
-
-def releases_subscribing_to_image(image: str):
-    pass
+def environments_in_cluster(cluster_name: str) -> List[Environment]:
+    envs = []
+    for env in all_environments():
+        if env.clusterName == cluster_name:
+            envs.append(env)
+    return envs
 
 
 def config() -> KubecdConfig:
+    if _config is None:
+        raise ConfigError('environments not yet loaded')
     return _config
-

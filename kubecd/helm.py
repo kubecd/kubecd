@@ -27,6 +27,10 @@ def repo_setup_commands(repos: List[ttypes.HelmRepo]) -> List[List[str]]:
     return cmds
 
 
+def use_context_command(env_name: str):
+    return ['kubectl', 'config', 'use-context', kube_context(env_name)]
+
+
 def kubectl_apply_command(resource_files: List[str], dry_run: bool, env_name: str) -> List[str]:
     cmd = ['kubectl', '--context', kube_context(env_name), 'apply']
     if dry_run:

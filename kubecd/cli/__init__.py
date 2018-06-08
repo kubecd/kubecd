@@ -2,7 +2,8 @@ import argparse
 import os
 import subprocess
 import sys
-from typing import List
+from collections import defaultdict
+from typing import List, Dict
 
 import argcomplete
 import logging
@@ -14,6 +15,7 @@ from ruamel.yaml import YAMLError
 
 from kubecd import __version__, helm, updates, github
 from kubecd import model
+from kubecd.providers import get_cluster_provider
 from kubecd.thriftutils import SchemaError
 from kubecd.updates import find_updates_for_env, find_updates_for_releases
 
@@ -28,7 +30,7 @@ class CliError(Exception):
 def parser(prog='kcd') -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=prog)
     p.add_argument(
-        '-f', '--config-file',
+        '-f', '--environments-file',
         help='KubeCD config file file (default $KUBECD_CONFIG or "environments.yaml")',
         metavar='FILE',
         default=os.getenv('KUBECD_CONFIG', 'environments.yaml')).completer = FilesCompleter(
@@ -47,6 +49,7 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     apply.add_argument('--debug', help='run helm with --debug', action='store_true', default=False)
     apply.add_argument('--releases', '-r', help='apply only these releases', action='append')
     apply.add_argument('--all-environments', '-a', help='apply all environments', action='store_true', default=False)
+    apply.add_argument('--init', help='Initialize credentials and contexts', action='store_true', default=False)
     apply.add_argument('env', nargs='?',
                        help='name of environment to apply, must be specified unless --all-environments is')
     apply.set_defaults(func=apply_env)
@@ -89,7 +92,82 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
 
     j2y = s.add_parser('json2yaml', help='JSON to YAML conversion utility (stdin/stdout)')
     j2y.set_defaults(func=json2yaml)
+
+    init = s.add_parser('init', help='Initialize credentials and contexts')
+    init.add_argument('--all-environments', '-a', help='initialize all environments', action='store_true', default=False)
+    init.add_argument('--cluster', help='Initialize contexts for all environments in a cluster')
+    init.add_argument('--dry-run', '-n', help='print commands instead of running them', action='store_true')
+    init.add_argument('envs', help='environment[s] to initialize', metavar='ENV', nargs='*')
+    init.set_defaults(func=init_contexts)
+
+    use = s.add_parser('use', help='switch kube context to the specified environment')
+    use.add_argument('env', help='environment name', metavar='ENV')
+    use.set_defaults(func=use_env_context)
     return p
+
+
+def cluster_env_map(environments_file: str,
+                    all_environments: bool=False,
+                    cluster: str=None,
+                    envs: List[str]=None) -> Dict[model.Cluster, List[model.Environment]]:
+    kcd_model = load_model(environments_file)
+    if all_environments:
+        return {c: kcd_model.environments_in_cluster(c.name) for c in kcd_model.all_clusters()}
+    if cluster:
+        try:
+            return {kcd_model.get_cluster(cluster): kcd_model.environments_in_cluster(cluster)}
+        except KeyError as e:
+            raise CliError('no such cluster: {}'.format(e))
+    try:
+        env_map = defaultdict(list)
+        for env_name in envs:
+            e = kcd_model.get_environment(env_name)
+            try:
+                c = kcd_model.get_cluster(e.clusterName)
+            except KeyError as e:
+                raise CliError('no such cluster: {}'.format(e))
+            env_map[c].append(e)
+        return env_map
+    except KeyError as e:
+        raise CliError('no such environment: {}'.format(e))
+
+
+def use_env_context(environments_file: str, env: str, **kwargs):
+    kcd_model = load_model(environments_file)
+    try:
+        kcd_model.get_environment(env)
+    except KeyError as e:
+        raise CliError('no such environment: {}'.format(e))
+    run_command(helm.use_context_command(env))
+
+
+def init_contexts(environments_file: str, all_environments: True, cluster: str, envs: List[str], dry_run=False, **kwargs):
+    if not all_environments and not cluster and not envs:
+        raise CliError('please specify either --cluster, --all-environments or one or more environments')
+    env_map = cluster_env_map(environments_file, all_environments, cluster, envs)
+    commands_to_run = []
+    for c, el in env_map.items():
+        cp = get_cluster_provider(c)
+        commands_to_run.extend(cp.cluster_init_commands())
+        for e in el:
+            commands_to_run.extend(cp.context_init_commands(e))
+    run_commands(commands_to_run, dry_run=dry_run)
+
+
+def run_command(cmd: List[str], dry_run=False):
+    if dry_run:
+        print(' '.join(cmd))
+        return
+    try:
+        logger.debug('Executing: "%s"', ' '.join(cmd))
+        return subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        raise CliError(e)
+
+
+def run_commands(cmds: List[List[str]], dry_run=False):
+    for cmd in cmds:
+        run_command(cmd, dry_run)
 
 
 def json2yaml(**kwargs):
@@ -99,19 +177,17 @@ def json2yaml(**kwargs):
     yaml.safe_dump(obj, sys.stdout)
 
 
-def diff_release(config_file: str, releases: List[str], env: str, **kwargs):
-    kcd_config = load_model(config_file)
-    e = kcd_config.env_by_name(env)
+def diff_release(environments_file: str, releases: List[str], env: str, **kwargs):
+    kcd_config = load_model(environments_file)
+    e = kcd_config.get_environment(env)
     for release in releases:
         r = e.named_release(release)
         cmd = helm.generate_helm_diff_argv(r, e, r.from_file)
-        s = subprocess.call(cmd)
-        if s != 0:
-            raise CliError('Command "{cmd}" exited with status {status}'.format(cmd=' '.join(cmd), status=s))
+        run_command(cmd)
 
 
-def observe_new_image(config_file: str, image: str, patch: bool, submit_pr: bool, **kwargs):
-    kcd_config = load_model(config_file)
+def observe_new_image(environments_file: str, image: str, patch: bool, submit_pr: bool, **kwargs):
+    kcd_config = load_model(environments_file)
     image_repo, image_tag = image.split(':')
     image_index = kcd_config.image_index
     patched_files = []
@@ -133,29 +209,29 @@ def print_completion(prog, **kwargs):
         sys.stdout.write(argcomplete.shellcode(prog, shell=shell))
 
 
-def apply_env(config_file, dry_run, debug, all_environments=False, env=None, releases=None, **kwargs):
-    target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
-    commands_to_run = model.config().init_commands()
+def apply_env(environments_file, init, dry_run, debug, all_environments=False, env=None, releases=None, **kwargs):
+    target_envs = one_or_all_envs(env, all_environments, file_name=environments_file)
+    commands_to_run = []
+    if init:
+        commands_to_run.extend(model.config().init_commands())
     for environment in target_envs:
         logger.info('Collecting commands for environment "%s"', environment.name)
-        init_cmds = environment.init_commands(dry_run=dry_run)
         try:
             deploy_cmds = helm.deploy_commands(environment, dry_run=dry_run, limit_to_releases=releases, debug=debug)
         except ValueError as e:
             raise CliError(str(e))
         if len(deploy_cmds) > 0:
-            commands_to_run.extend(init_cmds)
+            if init:
+                init_cmds = environment.init_commands()
+                commands_to_run.extend(init_cmds)
             commands_to_run.extend(deploy_cmds)
     for cmd in commands_to_run:
         print('{t.yellow}{cmd}{t.normal}'.format(cmd=' '.join(cmd), t=t))
-        logger.debug('Executing: "%s"', ' '.join(cmd))
-        cmd_status = subprocess.call(cmd)
-        if cmd_status != 0:
-            raise CliError('Command "{cmd}" exited with non-0 status {status}'.format(cmd=cmd, status=cmd_status))
+        run_command(cmd)
 
 
-def dump_env(config_file, all_environments=False, env=None, **kwargs):
-    target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
+def dump_env(environments_file, all_environments=False, env=None, **kwargs):
+    target_envs = one_or_all_envs(env, all_environments, file_name=environments_file)
     for cmd in model.config().init_commands():
         print('{t.yellow}{cmd}{t.normal}'.format(cmd=' '.join(cmd), t=t))
     for environment in target_envs:
@@ -167,33 +243,33 @@ def dump_env(config_file, all_environments=False, env=None, **kwargs):
         print('')
 
 
-def list_kind(config_file, kind, **kwargs):
+def list_kind(environments_file, kind, **kwargs):
     if kind == 'env' or kind == 'environment':
-        for environment in load_model(config_file):
+        for environment in load_model(environments_file):
             print(environment.name)
     elif kind == 'release':
-        for environment in load_model(config_file):
+        for environment in load_model(environments_file):
             for release in environment.all_releases:
                 print('{env}/{release}'.format(env=environment.name, release=release.name))
     else:
         raise CliError('unknown kind "{}"'.format(kind))
 
 
-def poll_registries(config_file, all_environments=False, env=None, releases=None, patch=False, **kwargs):
-    target_envs = one_or_all_envs(env, all_environments, file_name=config_file)
-    for environment in target_envs:
+def poll_registries(environments_file, all_environments=False, env=None, releases=None, patch=False, **kwargs):
+    target_envs = one_or_all_envs(env, all_environments, file_name=environments_file)
+    for te in target_envs:
         if releases is None:
-            logger.info('polling environment: "%s"', environment.name)
-            file_updates = find_updates_for_env(environment)
+            logger.info('polling environment: "%s"', te.name)
+            file_updates = find_updates_for_env(te)
         else:
-            release_objs = [environment.named_release(r) for r in releases]
-            logger.info('polling env:%s releases: %s', environment.name, ' '.join(releases))
-            file_updates = find_updates_for_releases(release_objs, environment)
+            release_objs = [te.named_release(r) for r in releases]
+            logger.info('polling env:%s releases: %s', te.name, ' '.join(releases))
+            file_updates = find_updates_for_releases(release_objs, te)
         for release_file, update_list in file_updates.items():
             for update in update_list:
                 print(
                     '{env}/{release}:\n\tfile: {file}\n\timage: {image}\n\ttag: {tag_from} -> {tag_to}'.format(
-                        env=environment.name,
+                        env=te.name,
                         file=release_file,
                         release=update.release.name,
                         image=update.image_repo,
@@ -236,21 +312,21 @@ def indent_file(files, **kwargs):
 def load_envs(file_name: str) -> List[model.Environment]:
     try:
         load_model(file_name)
-        return model.as_list()
+        return model.all_environments()
     except ruamel.yaml.error.YAMLError as e:
         raise CliError('could not read "{}": {}'.format(file_name, str(e)))
 
 
 def one_or_all_envs(env_name: str, all_envs: bool, file_name: str) -> List[model.Environment]:
-    load_envs(file_name)
     if env_name is None and all_envs is False:
         raise CliError('need to specify either an environment name or --all')
+    kcd_model = load_model(file_name)
     if env_name is not None:
         try:
-            return [model.get_environment(env_name)]
+            return [kcd_model.get_environment(env_name)]
         except KeyError:
             raise CliError('no such environment: {}'.format(env_name))
-    return model.as_list()
+    return kcd_model.all_environments()
 
 
 def load_model(file_name: str):

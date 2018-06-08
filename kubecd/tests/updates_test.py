@@ -36,8 +36,8 @@ def mocked_requests_get(*args, **kwargs):
     elif args[0] == TEST_REGISTRY_TAGS_URL:
         return MockResponse(200, local_file('registry-v2-tags-list.json'))
     elif args[0].startswith(TEST_REGISTRY_MANIFESTS_URL_PREFIX):
-        l = len(TEST_REGISTRY_MANIFESTS_URL_PREFIX)
-        tag = args[0][l:]
+        ln = len(TEST_REGISTRY_MANIFESTS_URL_PREFIX)
+        tag = args[0][ln:]
         return MockResponse(200, local_file('registry-v2-manifests-{tag}.json'.format(tag=tag)))
     else:
         pytest.fail("unexpected requests.get url: {url}".format(url=args[0]))
@@ -151,6 +151,6 @@ def docker_hub_expected_tags() -> Dict[str, int]:
 @pytest.fixture
 def docker_registry_v2_expected_tags() -> Dict[str, int]:
     return {
-        'test':   1423821895,
+        'test': 1423821895,
         'latest': 1437468476,
     }
