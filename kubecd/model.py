@@ -166,6 +166,9 @@ class KubecdConfig(ttypes.KubecdConfig):
     def get_cluster(self, name: str) -> Cluster:
         return self._cluster_index[name]
 
+    def has_cluster(self, name: str) -> bool:
+        return name in self._cluster_index
+
     def environments_in_cluster(self, cluster_name: str) -> List[Environment]:
         envs = []
         for env in self.all_environments():
