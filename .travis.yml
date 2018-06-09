@@ -11,6 +11,7 @@ install:
   - pip install -e . -r requirements-test.txt
 script:
   - pytest
+  - flake8
   - docker build -t zedge/kubecd:latest .
 deploy:
   - provider: script
@@ -18,18 +19,3 @@ deploy:
     on:
       branch: master
       python: '3.5'
-#  - provider: script
-#    script: |
-#      docker build -t zedge/kubecd:$TRAVIS_TAG .
-#      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-#      docker push zedge/kubecd:$TRAVIS_TAG
-#    on:
-#      tags: true
-#      python: '3.5'
-#  - provider: pypi
-#    user: stigsb
-#    password:
-#      secure: nTCoOtAr7ipA+Zu87Xtb0ggvtvTsRyi9ij5rPm8yDBxCK6FRvkTraAx78AR0QP8GpB8o047PjU5rVf3YkrlTgUWNWmRP5IuCc2fKuwLRmpqfy2zl8hRq1S1xnK0WIpIKRAAyLMbXbJhO5H2pNrLuO7TGGCKs1JNySknT1ASzVZuAU2Odd3qwWFa+nwqoCLllgTHka56CULw5Fva88siwyb/rIoXuLdM33LM+X9wflzWKrrp0uKkKvjo07nvfvvYG3F+Br5TaNEjIiFyPv12svnQnjlXKhIYeiFE6H0VZI0WTxB4YeqtCwk/qV+dAhP67xU2GtYUV2iWRiLu/uRNEToubjPDNOukwCFIM51LAr5HFIRPpF4ITs3hwR5p48z66jzHwA+IN2DCth7OVG0ikTPCNzPtGsnhw58FTRibX5CdlDl+DvtTkuZ0z8+A2cqnCLyFFAKBqB6uxyAsOdZYfSqHgIRYNZuKUbHxEuSYH4zQ1qVx5gE3m5CI0QQZAiVSm28OCCLo8UnsZdjrGbPcTGWXRY/84mAIKiFgZDjujSi93BavkbDElTJuUNhoaNhSPzQvEb1cDUC9aRU+cUvzh3TtjGVAkVv76EdgUJxLkaXKdShv82mNRuL8R69axdmykZxMwdaGbG/qyd0HYUxzB79XNnWS4IW2IG9alzEeOilg=
-#    on:
-#      tags: true
-#      python: '3.5'
