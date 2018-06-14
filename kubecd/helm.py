@@ -204,11 +204,11 @@ def get_resolved_values(release: model.Release, for_env: Union[model.Environment
     # 2. merge with valuesFile:
     # 3. merge with values:
     values = {}
-    if release.chart.dir:
+    if release.chart and release.chart.dir:
         values_file = resolve_file_path(path.join(release.chart.dir, 'values.yaml'), relative_to_file=release._from_file)
         if path.exists(values_file):
             values = merge_values(from_dict=load_values_file(values_file), onto_dict=values)
-    elif release.chart.reference:
+    elif release.chart and release.chart.reference:
         # "helm inspect" outputs a two-document yaml block, where the second is the parsed default values.yaml
         output = inspect(release.chart.reference, release.chart.version)
         chart_default_values = ruamel.yaml.safe_load(output)
