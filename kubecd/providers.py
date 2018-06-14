@@ -1,6 +1,8 @@
 import abc
 from typing import List
 
+import json
+
 from .utils import kube_context
 from .gen_py.ttypes import Environment, Cluster
 from .gen_py import ttypes
@@ -22,13 +24,16 @@ class BaseClusterProvider(metaclass=abc.ABCMeta):
     def user_name(self) -> str:
         pass
 
+    def namespace(self, env: Environment) -> str:
+        return env.kubeNamespace
+
     def context_init_commands(self, env: Environment) -> List[List[str]]:
         context_name = kube_context(env.name)
         return [[
             'kubectl', 'config', 'set-context', context_name,
             '--cluster', self.cluster_name(),
             '--user', self.user_name(),
-            '--namespace', env.kubeNamespace
+            '--namespace', self.namespace(env)
         ]]
 
 
@@ -42,7 +47,7 @@ class GkeClusterProvider(BaseClusterProvider):
         ]]
 
     def cluster_name(self) -> str:
-        return self.cluster.provider.gke.clusterName
+        return 'gke_{gke.project}_{gke.zone}_{gke.clusterName}'.format(gke=self.cluster.provider.gke)
 
     def user_name(self) -> str:
         return self.cluster_name()
@@ -74,6 +79,46 @@ class MinikubeClusterProvider(BaseClusterProvider):
         return 'minikube'
 
 
+class DockerForDesktopProvider(BaseClusterProvider):
+    def cluster_init_commands(self) -> List[List[str]]:
+        return [
+            ['kubectl', 'config', 'set-cluster', 'docker-for-desktop-cluster',
+             '--insecure-skip-tls-verify=true', '--server=https://localhost:6443']
+        ]
+
+    def cluster_name(self) -> str:
+        return 'docker-for-desktop-cluster'
+
+    def user_name(self) -> str:
+        return 'docker-for-desktop'
+
+
+class ExistingContextProvider(BaseClusterProvider):
+    def __init__(self, cluster: ttypes.Cluster):
+        import subprocess
+        super().__init__(cluster)
+        kube_config = json.loads(subprocess.check_output(['kubectl', 'config', 'view', '-o', 'json']).decode('utf-8'))
+        self.kube_context = None
+        name = cluster.provider.existingContext.contextName
+        for context in kube_config['contexts']:
+            if name in context['name'] and 'context' in context:
+                self.kube_context = context['context']
+        if self.kube_context is None:
+            raise ValueError('context "{}" not found in existing kube config'.format(name))
+
+    def cluster_init_commands(self) -> List[List[str]]:
+        return []
+
+    def cluster_name(self) -> str:
+        return self.kube_context['cluster']
+
+    def user_name(self) -> str:
+        return self.kube_context['user']
+
+    def namespace(self, env: Environment) -> str:
+        return self.kube_context['namespace'] if 'namespace' in self.kube_context else 'default'
+
+
 def get_cluster_provider(cluster: Cluster) -> BaseClusterProvider:
     if cluster.provider.gke:
         return GkeClusterProvider(cluster)
@@ -81,6 +126,10 @@ def get_cluster_provider(cluster: Cluster) -> BaseClusterProvider:
         return MinikubeClusterProvider(cluster)
     elif cluster.provider.aks:
         return AksClusterProvider(cluster)
+    elif cluster.provider.dockerForDesktop:
+        return DockerForDesktopProvider(cluster)
+    elif cluster.provider.existingContext:
+        return ExistingContextProvider(cluster)
     raise ValueError('missing or unknown cluster provider')
 
 

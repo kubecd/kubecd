@@ -90,10 +90,19 @@ struct AksProvider {
 struct MinikubeProvider {
 }
 
+struct DockerForDesktopProvider {
+}
+
+struct ExistingContextProvider {
+    1: optional string contextName;
+}
+
 union Provider {
     1: optional GkeProvider gke;
     2: optional MinikubeProvider minikube;
     3: optional AksProvider aks;
+    4: optional DockerForDesktopProvider dockerForDesktop;
+    5: optional ExistingContextProvider existingContext;
 }
 
 struct ClusterParameter {
