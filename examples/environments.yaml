@@ -17,6 +17,10 @@ clusters:
         project: example-com-test
         clusterName: test-cluster
         zone: us-central1-c
+  - name: docker-for-desktop
+    provider:
+      existingContext:
+        contextName: docker-for-desktop
 
 environments:
   - name: prod
@@ -41,3 +45,11 @@ environments:
         value: "gcr.io/example-com-test/"
       - key: "ingress.domain"
         value: "test.example.com"
+  - name: dev
+    clusterName: docker-for-desktop
+    kubeNamespace: default
+    releasesFiles:
+      - common/base-env.yaml
+    defaultValues:
+      - key: "ingress.domain"
+        value: "local"

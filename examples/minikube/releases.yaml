@@ -1,0 +1,4 @@
+releases:
+  - name: echoserver
+    resourceFiles:
+      - echo-app.yaml
