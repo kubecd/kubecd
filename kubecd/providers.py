@@ -65,12 +65,7 @@ class AksClusterProvider(BaseClusterProvider):
 
 class MinikubeClusterProvider(BaseClusterProvider):
     def cluster_init_commands(self) -> List[List[str]]:
-        return [[
-            'gcloud', 'container', 'clusters', 'get-credentials',
-            '--project', self.cluster.provider.gke.project,
-            '--zone', self.cluster.provider.gke.zone,
-            self.cluster.provider.gke.clusterName
-        ]]
+        return []
 
     def cluster_name(self) -> str:
         return 'minikube'
