@@ -74,6 +74,8 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
                         help='poll this specific release')
     poll_p.add_argument('--image', '-i',
                         help='poll releases using this image')
+    poll_p.add_argument('--cluster', '-c',
+                        help='poll all releases in this cluster')
     poll_p.add_argument('env', nargs='?',
                         help='name of environment to poll')
     poll_p.set_defaults(func=poll_registries)
@@ -286,8 +288,8 @@ def list_kind(environments_file, kind, **kwargs):
         raise CliError('unknown kind "{}"'.format(kind))
 
 
-def poll_registries(environments_file, env=None, releases=None, patch=False, **kwargs):
-    target_envs = resolve_envs(env, file_name=environments_file)
+def poll_registries(environments_file, cluster=None, env=None, releases=None, patch=False, **kwargs):
+    target_envs = resolve_envs(env, cluster, file_name=environments_file)
     for te in target_envs:
         if releases is None:
             logger.info('polling environment: "%s"', te.name)
