@@ -29,6 +29,7 @@ clean:
 	python setup.py clean
 
 test: thrift-gen
+	flake8
 	pytest
 
 release: clean test

@@ -9,22 +9,16 @@ from blessings import Terminal
 
 from .. import __version__
 from .commands import (
-    lint_environment,
-    cluster_env_map,
-    use_env_context,
-    init_contexts,
-    run_command,
-    run_commands,
-    json2yaml,
-    diff_release,
-    observe_new_image,
     apply_env,
     dump_env,
-    list_kind,
-    poll_registries,
-    patch_releases_file,
     indent_file,
-    resolve_envs,
+    init_contexts,
+    json2yaml,
+    lint_environment,
+    list_kind,
+    observe_new_image,
+    poll_registries,
+    use_env_context,
     CliError,
 )
 
