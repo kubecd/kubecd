@@ -67,7 +67,7 @@ def use_env_context(environments_file: str, env: str, **kwargs):
     run_command(helm.use_context_command(env))
 
 
-def init_contexts(environments_file: str, cluster: str, env_name: str, dry_run=False, **kwargs):
+def init_contexts(environments_file: str, cluster: str, env_name: str, contexts_only: bool=False, dry_run=False, **kwargs):
     if not cluster and not env_name:
         raise CliError('please specify either --cluster or ENV')
     env_map = cluster_env_map(environments_file, cluster, env_name)
@@ -75,7 +75,8 @@ def init_contexts(environments_file: str, cluster: str, env_name: str, dry_run=F
     commands_to_run.extend(model.config().init_commands())
     for c, el in env_map.items():
         cp = get_cluster_provider(c)
-        commands_to_run.extend(cp.cluster_init_commands())
+        if not contexts_only:
+            commands_to_run.extend(cp.cluster_init_commands())
         for e in el:
             commands_to_run.extend(cp.context_init_commands(e))
     run_commands(commands_to_run, dry_run=dry_run)

@@ -122,6 +122,8 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
                       help='print commands instead of running them')
     init.add_argument('env_name', metavar='ENV', nargs='?',
                       help='environment to initialize')
+    init.add_argument('--contexts-only', action='store_true',
+                      help='initialize contexts only, assuming that cluster credentials are set up')
     init.set_defaults(func=init_contexts)
 
     use = s.add_parser('use',
