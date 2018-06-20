@@ -8,10 +8,9 @@ import logging
 import requests
 import semantic_version
 
-from . import helm
 from . import semver
 from .model import Environment, Release
-from .helm import key_is_in_values, lookup_value
+from .helm import key_is_in_values, lookup_value, get_resolved_values
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +142,7 @@ def release_wants_tag_update(release: Release, new_tag: str) -> List[ImageUpdate
     for trigger in release.triggers:
         if trigger.image is None or trigger.image.tagValue is None:
             continue
-        values = helm.get_resolved_values(release, for_env=None, skip_value_from=True)
+        values = get_resolved_values(release, for_env=None, skip_value_from=True)
         tag_value = trigger.image.tagValue
         current_tag = lookup_value(tag_value, values)
         # if the current version is not semver, consider any value to be an update
@@ -172,7 +171,7 @@ def find_updates_for_release(release: Release, environment: Environment) -> Dict
         repo_value = trigger.image.repoValue
         prefix_value = trigger.image.repoPrefixValue
         track = trigger.image.track
-        values = helm.get_resolved_values(release, for_env=environment, skip_value_from=True)
+        values = get_resolved_values(release, for_env=environment, skip_value_from=True)
         logger.debug('found trigger for image "%s" from value "%s": %s final values: %s',
                      lookup_value(repo_value, values),
                      tag_value,

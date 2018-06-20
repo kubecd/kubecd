@@ -1,0 +1,12 @@
+helmRepos: []
+
+clusters:
+  - name: test
+    provider:
+      minikube: {}
+
+environments:
+  - name: test
+    clusterName: test
+    releasesFiles:
+      - test-dupe-ingress.yaml

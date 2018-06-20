@@ -1,0 +1,7 @@
+releases:
+  - name: ingress1
+    resourceFiles:
+      - ingress1.yaml
+  - name: ingress2
+    resourceFiles:
+      - ingress2.yaml

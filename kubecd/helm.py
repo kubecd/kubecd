@@ -53,7 +53,7 @@ def deploy_commands(env: model.Environment, dry_run=False, debug=False, limit_to
         if limit_to_releases is None or release.name in limit_to_releases:
             rel_file = release.from_file
             if release.chart:
-                commands.append(generate_helm_install_argv(
+                commands.append(generate_helm_apply_argv(
                     release, env, release_file=rel_file, dry_run=dry_run, debug=debug))
             elif release.resourceFiles:
                 abs_files = [resolve_file_path(p, rel_file) for p in release.resourceFiles]
@@ -69,13 +69,13 @@ def generate_helm_values_argv(rel: model.Release, env: model.Environment, releas
     argv = []
     if not rel.skipDefaultValues:
         if env.defaultValuesFile:
-            def_val_file = resolve_file_path(env.defaultValuesFile, release_file)
+            def_val_file = resolve_file_path(env.defaultValuesFile, relative_to_file=release_file)
             argv.extend(['--values', def_val_file])
         if env.defaultValues:
             argv.append('--set')
             argv.append(','.join(['='.join(resolve_value(x, env)) for x in env.defaultValues]))
     if rel.valuesFile:
-        val_file = resolve_file_path(rel.valuesFile, release_file)
+        val_file = resolve_file_path(rel.valuesFile, relative_to_file=release_file)
         argv.extend(['--values', val_file])
     if rel.values:
         argv.append('--set')
@@ -85,11 +85,11 @@ def generate_helm_values_argv(rel: model.Release, env: model.Environment, releas
 
 def generate_helm_chart_args(rel: model.Release, release_file: str) -> List[str]:
     if rel.chart.reference is None:
-        dir = resolve_file_path(rel.chart.dir, release_file)
-        if not path.exists(dir):
+        chart_dir = resolve_file_path(rel.chart.dir, release_file)
+        if not path.exists(chart_dir):
             raise ValueError('{}: release "{}" chart.dir "{}" does not exist'.format(
-                release_file, rel.name, dir))
-        return [dir]
+                release_file, rel.name, chart_dir))
+        return [chart_dir]
     return [rel.chart.reference, '--version', rel.chart.version]
 
 
@@ -100,11 +100,22 @@ def generate_helm_diff_argv(rel: model.Release, env: model.Environment, release_
     return argv
 
 
-def generate_helm_install_argv(rel: model.Release,
-                               env: model.Environment,
-                               release_file: str,
-                               dry_run: bool = False,
-                               debug: bool = False) -> List[str]:
+def generate_helm_template_argv(rel: model.Release,
+                                env: model.Environment,
+                                from_file: str) -> List[str]:
+    argv = generate_helm_base_argv(env)
+    chart_dir = resolve_file_path(rel.chart.dir, from_file)
+    argv.extend(['template', chart_dir, '-n', rel.name])
+    argv.extend(['--namespace', env.kubeNamespace])
+    argv.extend(generate_helm_values_argv(rel, env, from_file))
+    return argv
+
+
+def generate_helm_apply_argv(rel: model.Release,
+                             env: model.Environment,
+                             release_file: str,
+                             dry_run: bool = False,
+                             debug: bool = False) -> List[str]:
     chart_args = generate_helm_chart_args(rel, release_file)
     argv = generate_helm_base_argv(env)
     argv.extend(['upgrade', rel.name])
@@ -205,7 +216,7 @@ def get_resolved_values(release: model.Release, for_env: Union[model.Environment
     # 3. merge with values:
     values = {}
     if release.chart and release.chart.dir:
-        values_file = resolve_file_path(path.join(release.chart.dir, 'values.yaml'), relative_to_file=release._from_file)
+        values_file = resolve_file_path(path.join(release.chart.dir, 'values.yaml'), relative_to_file=release.from_file)
         if path.exists(values_file):
             values = merge_values(from_dict=load_values_file(values_file), onto_dict=values)
     elif release.chart and release.chart.reference:
@@ -217,8 +228,12 @@ def get_resolved_values(release: model.Release, for_env: Union[model.Environment
         default_values = values_list_to_dict(for_env.defaultValues, for_env, skip_value_from=skip_value_from)
         values = merge_values(from_dict=default_values, onto_dict=values)
     if release.valuesFile:
-        values_file = resolve_file_path(release.valuesFile, relative_to_file=release._from_file)
-        values = merge_values(from_dict=load_values_file(values_file), onto_dict=values)
+        values_file = resolve_file_path(release.valuesFile, relative_to_file=release.from_file)
+        tmp = load_values_file(values_file)
+        if not tmp:
+            logger.warning('empty values file: %s', values_file)
+        else:
+            values = merge_values(from_dict=load_values_file(values_file), onto_dict=values)
     if for_env is not None and release.values:
         values = merge_values(from_dict=values_list_to_dict(release.values, for_env, skip_value_from=skip_value_from),
                               onto_dict=values)

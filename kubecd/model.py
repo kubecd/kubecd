@@ -186,8 +186,11 @@ class KubecdConfig(ttypes.KubecdConfig):
     def image_index(self) -> Dict[str, List[Release]]:
         index = defaultdict(list)
         if self._image_index is None:
+            logging.debug('building image index...')
             for env in self._environments:
+                logging.debug(' - Environment %s', env.name)
                 for rel in env.all_releases:
+                    logging.debug('    - Release %s', rel.name)
                     values = helm.get_resolved_values(rel, env, skip_value_from=True)
                     if rel.triggers:
                         for t in rel.triggers:
