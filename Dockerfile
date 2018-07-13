@@ -15,9 +15,9 @@ RUN pytest
 RUN python setup.py clean sdist
 
 FROM python:3.5
-ARG KUBECTL_VERSION=1.8.6
+ARG KUBECTL_VERSION=1.9.7
 ARG HELM_VERSION=2.8.2
-ARG GCLOUD_VERSION=199.0.0
+ARG GCLOUD_VERSION=204.0.0
 ARG HUB_VERSION=2.2.9
 COPY --from=build /build/dist/kubecd-*.tar.gz /tmp/
 RUN pip install /tmp/kubecd-*.tar.gz
@@ -32,5 +32,5 @@ RUN curl -Ls https://github.com/github/hub/releases/download/v${HUB_VERSION}/hub
  && chmod +x /usr/local/bin/hub
 RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz \
   | tar -C /usr/local -xzf -
-ENV PATH=/usr/local/bin:/usr/local/google-cloud-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH=/usr/local/bin:/usr/local/google-cloud-sdk/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
 ENTRYPOINT ["/usr/local/bin/kcd"]
