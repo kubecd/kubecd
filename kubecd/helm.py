@@ -224,7 +224,7 @@ def get_resolved_values(release: model.Release, for_env: Union[model.Environment
         output = inspect(release.chart.reference, release.chart.version)
         chart_default_values = ruamel.yaml.safe_load(output)
         values = merge_values(from_dict=chart_default_values, onto_dict=values)
-    if for_env is not None and len(for_env.defaultValues) > 0:
+    if for_env is not None and for_env.defaultValues is not None and len(for_env.defaultValues) > 0:
         default_values = values_list_to_dict(for_env.defaultValues, for_env, skip_value_from=skip_value_from)
         values = merge_values(from_dict=default_values, onto_dict=values)
     if release.valuesFile:
