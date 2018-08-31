@@ -16,7 +16,7 @@ RUN python setup.py clean sdist
 
 FROM python:3.5
 ARG KUBECTL_VERSION=1.9.7
-ARG HELM_VERSION=2.8.2
+ARG HELM_VERSION=2.9.1
 ARG GCLOUD_VERSION=204.0.0
 ARG HUB_VERSION=2.2.9
 COPY --from=build /build/dist/kubecd-*.tar.gz /tmp/
