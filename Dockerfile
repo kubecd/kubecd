@@ -5,7 +5,6 @@ RUN mkdir /gen_py && thrift -out /gen_py -gen py:dynamic idl/github.com/zedge/ku
 
 # Run tests and install package
 FROM python:3.5 AS build
-#RUN apk add --no-cache --update gcc python3-dev musl-dev
 COPY *.py requirements*.txt README.md /build/
 COPY kubecd/ /build/kubecd/
 WORKDIR /build
@@ -14,6 +13,8 @@ COPY --from=thrift /gen_py/kubecd/gen_py/ /build/kubecd/gen_py/
 RUN pytest
 RUN python setup.py clean sdist
 
+# Grab package from build step and install in a clean Python image,
+# along with kubectl, helm, gcloud, ssh and git
 FROM python:3.5
 ARG KUBECTL_VERSION=1.9.7
 ARG HELM_VERSION=2.9.1
@@ -32,5 +33,6 @@ RUN curl -Ls https://github.com/github/hub/releases/download/v${HUB_VERSION}/hub
  && chmod +x /usr/local/bin/hub
 RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz \
   | tar -C /usr/local -xzf -
+RUN apt-get update && apt-get install -y openssh-client git procps && apt-get clean
 ENV PATH=/usr/local/bin:/usr/local/google-cloud-sdk/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
 ENTRYPOINT ["/usr/local/bin/kcd"]
