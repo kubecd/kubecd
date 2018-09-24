@@ -67,15 +67,15 @@ def use_env_context(environments_file: str, env: str, **kwargs):
     run_command(helm.use_context_command(env))
 
 
-def init_contexts(environments_file: str, cluster: str, env_name: str, contexts_only: bool=False, dry_run=False, **kwargs):
+def init_contexts(environments_file: str, cluster: str, env_name: str, contexts_only: bool=False, gitlab=False, dry_run=False, **kwargs):
     if not cluster and not env_name:
         raise CliError('please specify either --cluster or ENV')
     env_map = cluster_env_map(environments_file, cluster, env_name)
     commands_to_run = []
     commands_to_run.extend(model.config().init_commands())
     for c, el in env_map.items():
-        cp = get_cluster_provider(c)
-        if not contexts_only:
+        cp = get_cluster_provider(c, gitlab)
+        if not contexts_only and not gitlab:
             commands_to_run.extend(cp.cluster_init_commands())
         for e in el:
             commands_to_run.extend(cp.context_init_commands(e))

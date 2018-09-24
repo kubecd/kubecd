@@ -124,6 +124,8 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
                       help='environment to initialize')
     init.add_argument('--contexts-only', action='store_true',
                       help='initialize contexts only, assuming that cluster credentials are set up')
+    init.add_argument('--gitlab', action='store_true',
+                      help='grab kube config from GitLab environment')
     init.set_defaults(func=init_contexts)
 
     use = s.add_parser('use',

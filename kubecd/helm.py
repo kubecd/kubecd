@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 def inspect(chart_reference: str, chart_version: str) -> str:
     cmd = ['helm', 'inspect', chart_reference, '--version', chart_version]
+    logger.debug('Executing: "%s"', ' '.join(cmd))
     output = subprocess.check_output(cmd).decode('utf-8').split("\n---\n")[1]
     return output
 
