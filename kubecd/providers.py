@@ -37,6 +37,17 @@ class BaseClusterProvider(metaclass=abc.ABCMeta):
         ]]
 
 
+class GitLabClusterProvider(BaseClusterProvider):
+    def cluster_init_commands(self) -> List[List[str]]:
+        return []
+
+    def cluster_name(self) -> str:
+        return 'gitlab-deploy'
+
+    def user_name(self) -> str:
+        return 'gitlab-deploy'
+
+
 class GkeClusterProvider(BaseClusterProvider):
     def cluster_init_commands(self) -> List[List[str]]:
         return [[
@@ -119,7 +130,9 @@ class ExistingContextProvider(BaseClusterProvider):
         return self.kube_context['namespace'] if 'namespace' in self.kube_context else 'default'
 
 
-def get_cluster_provider(cluster: Cluster) -> BaseClusterProvider:
+def get_cluster_provider(cluster: Cluster, gitlab_mode: bool=False) -> BaseClusterProvider:
+    if gitlab_mode:
+        return GitLabClusterProvider(cluster)
     if cluster.provider.gke:
         return GkeClusterProvider(cluster)
     elif cluster.provider.minikube:
