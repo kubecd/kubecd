@@ -14,6 +14,7 @@ from .commands import (
     indent_file,
     init_contexts,
     json2yaml,
+    yaml2json,
     lint_environment,
     list_kind,
     observe_new_image,
@@ -114,6 +115,9 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
 
     j2y = s.add_parser('json2yaml', help='JSON to YAML conversion utility (stdin/stdout)')
     j2y.set_defaults(func=json2yaml)
+
+    y2j = s.add_parser('yaml2json', help='YAML to JSON conversion utility (stdin/stdout)')
+    y2j.set_defaults(func=yaml2json)
 
     init = s.add_parser('init', help='Initialize credentials and contexts')
     init.add_argument('--cluster',

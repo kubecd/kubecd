@@ -105,6 +105,13 @@ def json2yaml(**kwargs):
     yaml.safe_dump(obj, sys.stdout)
 
 
+def yaml2json(**kwargs):
+    import json
+    from ruamel import yaml
+    obj = yaml.safe_load(sys.stdin)
+    json.dump(obj, sys.stdout)
+
+
 def diff_release(environments_file: str, releases: List[str], env: str, **kwargs):
     kcd_config = _load_model(environments_file)
     e = kcd_config.get_environment(env)
