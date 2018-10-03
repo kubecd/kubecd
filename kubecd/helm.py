@@ -79,7 +79,7 @@ def generate_helm_values_argv(rel: model.Release, env: model.Environment, releas
         val_file = resolve_file_path(rel.valuesFile, relative_to_file=release_file)
         argv.extend(['--values', val_file])
     if rel.values:
-        argv.append('--set')
+        argv.append('--set-string')
         argv.append(','.join(['='.join(resolve_value(x, env)) for x in rel.values]))
     return argv
 
