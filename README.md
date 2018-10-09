@@ -106,16 +106,15 @@ This project requires Python 3.5 and Docker.
 
 Then you need to generated Thrift source and install a shim that runs directly from your checked out source:
 
-    pip install -e .
+    pip install -r requirements.txt
     make
-    kcd --help
+    kcd --version
 
 ### Testing
 
 To run tests, first install test dependencies:
 
-    pip install -e .
-    pip install -r requirements-test.txt
+    pip install -r requirements.txt -r requirements-dev.txt
     make test
 
 ### Making Releases
@@ -123,6 +122,6 @@ To run tests, first install test dependencies:
 To make a new release:
 
  1. commit and push all changes
- 2. update the `__version__` attribute in [`kubecd/__init__.py`](kubecd/__init__.py)
+ 2. run `bumpversion minor` (or major/patch) to update the `__version__` attribute in [`kubecd/__init__.py`](kubecd/__init__.py)
  3. run `python setup.py release` - this will make and push a Git tag, which will kick off the actual
     release process driven by Travis

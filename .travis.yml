@@ -8,7 +8,7 @@ before_install:
   - make
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 install:
-  - pip install -e . -r requirements-test.txt
+  - pip install -r requirements.txt -r requirements-dev.txt
 script:
   - pytest
   - flake8
