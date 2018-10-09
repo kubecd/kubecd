@@ -181,6 +181,7 @@ def main():
         func(**kwargs)
     except CliError as e:
         print('{t.red}ERROR{t.normal}: {msg}'.format(msg=str(e), t=t), file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
