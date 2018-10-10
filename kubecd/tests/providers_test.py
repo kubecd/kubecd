@@ -1,8 +1,3 @@
-import json
-import os
-from typing import Dict
-from unittest.mock import patch
-
 import pytest
 
 from .. import providers as sut
@@ -13,13 +8,20 @@ GCP_ZONE = 'us-central1-a'
 GKE_CLUSTER_NAME = 'my-cluster'
 
 
-def test_gke_regional_vs_zonal_cluster(gke_regional_cluster, gke_zonal_cluster):
+def test_gke_regional(gke_regional_cluster):
+    provider = sut.get_cluster_provider(gke_regional_cluster)
     assert [
                ['gcloud', 'container', 'clusters', 'get-credentials', '--project', GCP_PROJECT, '--region', GCP_REGION, GKE_CLUSTER_NAME]
-           ] == sut.get_cluster_provider(gke_regional_cluster).cluster_init_commands()
+           ] == provider.cluster_init_commands()
+    assert 'gke_{project}_{region}_{cluster}'.format(project=GCP_PROJECT, region=GCP_REGION, cluster=GKE_CLUSTER_NAME) == provider.cluster_name()
+
+
+def test_gke_zonal(gke_zonal_cluster):
+    provider = sut.get_cluster_provider(gke_zonal_cluster)
     assert [
                ['gcloud', 'container', 'clusters', 'get-credentials', '--project', GCP_PROJECT, '--zone', GCP_ZONE, GKE_CLUSTER_NAME]
-           ] == sut.get_cluster_provider(gke_zonal_cluster).cluster_init_commands()
+           ] == provider.cluster_init_commands()
+    assert 'gke_{project}_{zone}_{cluster}'.format(project=GCP_PROJECT, zone=GCP_ZONE, cluster=GKE_CLUSTER_NAME) == provider.cluster_name()
 
 
 @pytest.fixture

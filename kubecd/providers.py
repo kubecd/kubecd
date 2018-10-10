@@ -63,7 +63,10 @@ class GkeClusterProvider(BaseClusterProvider):
         return [command]
 
     def cluster_name(self) -> str:
-        return 'gke_{gke.project}_{gke.zone}_{gke.clusterName}'.format(gke=self.cluster.provider.gke)
+        return 'gke_{gke.project}_{zone_or_region}_{gke.clusterName}'.format(
+            gke=self.cluster.provider.gke,
+            zone_or_region=self.cluster.provider.gke.zone if self.cluster.provider.gke.zone else self.cluster.provider.gke.region
+        )
 
     def user_name(self) -> str:
         return self.cluster_name()
