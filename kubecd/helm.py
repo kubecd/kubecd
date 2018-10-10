@@ -1,9 +1,10 @@
 import re
 import subprocess
-from os import path
+from os import path, environ, makedirs
 from typing import List, Union
-
+import hashlib
 import ruamel.yaml
+from pathlib import Path
 
 from .utils import kube_context
 from . import model
@@ -16,9 +17,21 @@ logger = logging.getLogger(__name__)
 
 
 def inspect(chart_reference: str, chart_version: str) -> str:
-    cmd = ['helm', 'inspect', chart_reference, '--version', chart_version]
-    logger.debug('Executing: "%s"', ' '.join(cmd))
-    output = subprocess.check_output(cmd).decode('utf-8').split("\n---\n")[1]
+    m = hashlib.sha1()
+    m.update(chart_reference.encode('utf-8'))
+    m.update(chart_version.encode('utf-8'))
+    cache_dir = path.join(environ['HOME'], '.kubecd', 'cache', 'inspect')
+    makedirs(cache_dir, exist_ok=True)
+    cache_file = path.join(cache_dir, m.hexdigest())
+    if not path.exists(cache_file):
+        cmd = ['helm', 'inspect', chart_reference, '--version', chart_version]
+        logger.debug('Executing: "%s"', ' '.join(cmd))
+        output = subprocess.check_output(cmd).decode('utf-8').split("\n---\n")[1]
+        logger.debug('Creating inspect cache file {}'.format(cache_file))
+        Path(cache_file).write_text(output, 'utf-8')
+    else:
+        logger.debug('Reading inspect cache file {}'.format(cache_file))
+        output = Path(cache_file).read_text('utf-8')
     return output
 
 
