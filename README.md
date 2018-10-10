@@ -1,9 +1,17 @@
 # Kubernetes Continuous Deployment Tool
 
 [![Build Status](https://travis-ci.org/zedge/kubecd.svg?branch=master)](https://travis-ci.org/zedge/kubecd)
+[![Latest PyPI version](https://img.shields.io/pypi/v/kubecd.svg?style=flat)](https://pypi.python.org/pypi/kubecd/)
 
-`kubecd` aims to provide a composable tool for assembling a Continuous Deployment using GitOps
-principles on Kubernetes.
+`kubecd` is a deployment tool for Kubernetes that lets you declare what should be deployed in all your
+environments, and make it so. It currently supports clusters running in GKE or Azure (plus minikube and Docker),
+and deployment using [Helm](https://helm.sh) or plain kubectl.
+
+Currently, `kubecd` does not implement an operator/controller, but instead integrates directly with
+command-line tools. An operator is being planned, but we want to see where
+[Helm 3](https://github.com/helm/community/tree/master/helm-v3/) and the
+[Application CRD](https://github.com/kubernetes-sigs/application) is going first.
+
 
 ## Goals
 
@@ -122,6 +130,6 @@ To run tests, first install test dependencies:
 To make a new release:
 
  1. commit and push all changes
- 2. run `bumpversion minor` (or major/patch) to update the `__version__` attribute in [`kubecd/__init__.py`](kubecd/__init__.py)
+ 2. run `bumpversion minor` (or major/patch) to update `__version__` in [`kubecd/__init__.py`](kubecd/__init__.py)
  3. run `python setup.py release` - this will make and push a Git tag, which will kick off the actual
     release process driven by Travis
