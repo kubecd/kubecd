@@ -8,7 +8,7 @@ FROM python:3.5 AS build
 COPY *.py requirements*.txt README.md /build/
 COPY kubecd/ /build/kubecd/
 WORKDIR /build
-RUN pip install -r requirements.txt -r requirements-test.txt
+RUN pip install -r requirements.txt -r requirements-dev.txt
 COPY --from=thrift /gen_py/kubecd/gen_py/ /build/kubecd/gen_py/
 RUN pytest
 RUN python setup.py clean sdist
