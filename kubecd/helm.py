@@ -137,7 +137,11 @@ def resolve_gce_address_value(address: ttypes.GceAddressValueRef, env: model.Env
     if address.isGlobal:
         cmd.append('--global')
     else:
-        cmd.extend(['--region', re.sub(r'-[a-z]$', '', provider.gke.zone)])
+        if provider.gke.region:
+            region = provider.gke.region
+        else:
+            region = re.sub(r'-[a-z]$', '', provider.gke.zone)
+        cmd.extend(['--region', region])
     return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
