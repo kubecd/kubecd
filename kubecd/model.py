@@ -112,6 +112,16 @@ class Cluster(ttypes.Cluster):
     def __init__(self, data: ttypes.Cluster, from_file: str):
         self._from_file = from_file
         super(Cluster, self).__init__(**data.__dict__)
+        issues = self._sanity_check()
+        if len(issues) > 0:
+            raise ValueError('Issues found:\n\t{}'.format('\n\t'.join(issues)))
+
+    def _sanity_check(self):
+        issues = []
+        if self.provider.gke:
+            if (self.provider.gke.zone and self.provider.gke.region) or (not self.provider.gke.zone and not self.provider.gke.region):
+                issues.append('must specify exactly one of "zone" or "region" for cluster "{}'.format(self.name))
+        return issues
 
     def __hash__(self) -> int:
         return hash(self.name)
@@ -146,12 +156,16 @@ class KubecdConfig(ttypes.KubecdConfig):
         return iter(self._environments)
 
     def _sanity_check(self):
-        counts = defaultdict(int)
+        env_seen = defaultdict(int)
         issues = []
         for env in self._environments:
-            if env.name in counts:
+            if env.name in env_seen:
                 issues.append('duplicate environment name: {}'.format(env.name))
-            counts[env.name] += 1
+            env_seen[env.name] += 1
+        cluster_seen = defaultdict(int)
+        for cluster in self._clusters:
+            if cluster.name in cluster_seen:
+                issues.append('duplicate cluster name: {}'.format(cluster.name))
         return issues
 
     def all_clusters(self) -> List[Cluster]:

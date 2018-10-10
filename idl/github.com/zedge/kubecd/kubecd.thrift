@@ -80,6 +80,7 @@ struct GkeProvider {
     1: optional string project;
     2: optional string clusterName;
     3: optional string zone;
+    4: optional string region;
 }
 
 struct AksProvider {

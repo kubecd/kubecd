@@ -50,12 +50,17 @@ class GitLabClusterProvider(BaseClusterProvider):
 
 class GkeClusterProvider(BaseClusterProvider):
     def cluster_init_commands(self) -> List[List[str]]:
-        return [[
+        command = [
             'gcloud', 'container', 'clusters', 'get-credentials',
-            '--project', self.cluster.provider.gke.project,
-            '--zone', self.cluster.provider.gke.zone,
-            self.cluster.provider.gke.clusterName
-        ]]
+            '--project', self.cluster.provider.gke.project
+        ]
+        if self.cluster.provider.gke.zone:
+            command.extend(['--zone', self.cluster.provider.gke.zone])
+        else:
+            # validation should ensure that we have either zone or region
+            command.extend(['--region', self.cluster.provider.gke.region])
+        command.append(self.cluster.provider.gke.clusterName)
+        return [command]
 
     def cluster_name(self) -> str:
         return 'gke_{gke.project}_{gke.zone}_{gke.clusterName}'.format(gke=self.cluster.provider.gke)
