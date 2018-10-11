@@ -1,6 +1,6 @@
 import re
 import subprocess
-from os import path, environ, makedirs
+from os import path, getenv, makedirs
 from typing import List, Union
 import hashlib
 import ruamel.yaml
@@ -20,9 +20,10 @@ def inspect(chart_reference: str, chart_version: str) -> str:
     m = hashlib.sha1()
     m.update(chart_reference.encode('utf-8'))
     m.update(chart_version.encode('utf-8'))
-    cache_dir = path.join(environ['HOME'], '.kubecd', 'cache', 'inspect')
+    chart_hash = m.hexdigest()
+    cache_dir = path.join(getenv('KUBECD_CACHE', path.join(getenv('HOME'), '.kubecd', 'cache')), 'inspect')
     makedirs(cache_dir, exist_ok=True)
-    cache_file = path.join(cache_dir, m.hexdigest())
+    cache_file = path.join(cache_dir, chart_hash)
     if not path.exists(cache_file):
         cmd = ['helm', 'inspect', chart_reference, '--version', chart_version]
         logger.debug('Executing: "%s"', ' '.join(cmd))
