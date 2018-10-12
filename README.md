@@ -3,9 +3,9 @@
 [![Build Status](https://travis-ci.org/zedge/kubecd.svg?branch=master)](https://travis-ci.org/zedge/kubecd)
 [![Latest PyPI version](https://img.shields.io/pypi/v/kubecd.svg?style=flat)](https://pypi.python.org/pypi/kubecd/)
 
-`kubecd` is a deployment tool for Kubernetes that lets you declare what should be deployed in all your
-environments, and make it so. It currently supports clusters running in GKE or Azure (plus minikube and Docker),
-and deployment using [Helm](https://helm.sh) or plain kubectl.
+`kubecd` is a deployment tool for Kubernetes that lets you declare in Git what should be deployed in all your
+environments, manage image upgrade strategies per service, and make it so. It supports any Kubernetes installation
+with some help, but has direct support for GKE or Azure, minikube and Docker, and deployment using [Helm](https://helm.sh) or plain kubectl.
 
 Currently, `kubecd` does not implement an operator/controller, but instead integrates directly with
 command-line tools. An operator is being planned, but we want to see where
