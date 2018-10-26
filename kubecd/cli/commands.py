@@ -102,7 +102,7 @@ def json2yaml(**kwargs):
     import json
     from ruamel import yaml
     obj = json.load(sys.stdin)
-    yaml.safe_dump(obj, sys.stdout)
+    yaml.safe_dump(obj, sys.stdout, default_flow_style=False)
 
 
 def yaml2json(**kwargs):
