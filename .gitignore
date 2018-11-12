@@ -8,3 +8,5 @@ __pycache__
 .idea
 .kubeconfig
 .helm
+.coverage
+/htmlcov
