@@ -1,0 +1,13 @@
+releases:
+  - name: prod-demo
+    chart:
+      dir: charts/demo-app
+    trigger:
+      image:
+        repoPrefixValue: "image.registry"
+        track: MinorVersion
+    values:
+      - key: fullnameOverride
+        value: "demo-app"
+      - key: image.tag
+        value: "v1.0"

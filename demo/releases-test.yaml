@@ -1,0 +1,12 @@
+releases:
+  - name: test-demo
+    chart:
+      dir: charts/demo-app
+    trigger:
+      image:
+        track: Newest
+    values:
+      - key: fullnameOverride
+        value: "demo-app"
+      - key: image.tag
+        value: "3842bd0"

@@ -1,0 +1,22 @@
+releases:
+  - name: nginx-ingress
+    chart:
+      reference: stable/nginx-ingress
+      version: 0.19.2
+    values:
+      - key: controller.service.loadBalancerIP
+        valueFrom:
+          gceResource:
+            address:
+              name: demo-nginx-ingress
+              isGlobal: false
+
+  - name: cert-manager
+    chart:
+      reference: stable/cert-manager
+      version: v0.5.1
+    valuesFile: values-certmanager.yaml
+
+  - name: cluster-issuers
+    resourceFiles:
+      - letsencrypt-prod-v2.yaml

@@ -1,0 +1,40 @@
+helmRepos:
+  - name: stable
+    url: https://kubernetes-charts.storage.googleapis.com/
+
+clusters:
+  - name: demo-cluster
+    provider:
+      gke:
+        project: kubecd-demo
+        clusterName: demo-cluster
+        zone: europe-north1-a
+
+environments:
+  - name: kube-system
+    clusterName: demo-cluster
+    kubeNamespace: kube-system
+    releasesFiles:
+      - releases-common.yaml
+
+  - name: test
+    clusterName: demo-cluster
+    kubeNamespace: test
+    releasesFiles:
+      - releases-test.yaml
+    defaultValues:
+      - key: "image.prefix"
+        value: "eu.gcr.io/kubecd-demo/test-"
+      - key: "ingress.domain"
+        value: "test.kubecd.io"
+
+  - name: prod
+    clusterName: demo-cluster
+    kubeNamespace: prod
+    releasesFiles:
+      - releases-prod.yaml
+    defaultValues:
+      - key: "image.prefix"
+        value: "eu.gcr.io/kubecd-demo/prod-"
+      - key: "ingress.domain"
+        value: "prod.kubecd.io"
