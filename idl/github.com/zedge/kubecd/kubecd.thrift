@@ -42,10 +42,9 @@ struct HelmTrigger {
     1: optional string track;  // one of "PatchLevel", "MinorVersion", "MajorVersion", "Newest"
 }
 
-union DeploymentTrigger {
-    1: optional GithubTrigger github;
-    2: optional ImageTrigger image;
-    3: optional HelmTrigger helm;
+union ReleaseUpdateTrigger {
+    1: optional ImageTrigger image;
+    2: optional HelmTrigger chart;
 }
 
 struct Chart {
@@ -59,8 +58,8 @@ struct Release {
     2: optional Chart chart;
     3: optional string valuesFile;
     4: optional list<ChartValue> values;
-    5: optional DeploymentTrigger trigger;
-    6: optional list<DeploymentTrigger> triggers;
+    5: optional ReleaseUpdateTrigger trigger;
+    6: optional list<ReleaseUpdateTrigger> triggers;
     7: optional bool skipDefaultValues;
     8: optional list<string> resourceFiles;
 }

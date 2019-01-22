@@ -10,12 +10,18 @@ releases:
             address:
               name: demo-nginx-ingress
               isGlobal: false
+    trigger:
+      chart:
+        track: MinorVersion
 
   - name: cert-manager
     chart:
       reference: stable/cert-manager
       version: v0.5.1
     valuesFile: values-certmanager.yaml
+    trigger:
+      chart:
+        track: MinorVersion
 
   - name: cluster-issuers
     resourceFiles:

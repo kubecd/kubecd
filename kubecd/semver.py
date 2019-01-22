@@ -5,9 +5,10 @@ from semantic_version import Version, validate, Spec
 
 def is_semver(version: str) -> bool:
     try:
-        return validate(normalize(version))
+        Version.coerce(normalize(version))
     except ValueError:
         return False
+    return True
 
 
 def normalize(version: str) -> str:

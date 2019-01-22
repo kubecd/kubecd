@@ -10,3 +10,4 @@ __pycache__
 .helm
 .coverage
 /htmlcov
+.vscode

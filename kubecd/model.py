@@ -1,6 +1,6 @@
 from collections import defaultdict
 from os import path
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Tuple
 
 import logging
 
@@ -41,7 +41,7 @@ class Release(ttypes.Release):
             issues.append('must define only one of "chart" or "resourceFiles"')
         if self.chart is not None:
             if self.chart.reference is not None and self.chart.version is None:
-                issues.append('must have a chart.version'.format(self.chart.name))
+                issues.append('must have a chart.version for {}'.format(self.chart.name))
         if self.trigger and self.triggers:
             issues.append('must define only one of "trigger" or "triggers"')
         return issues
@@ -60,6 +60,8 @@ class Environment(ttypes.Environment):
         self._from_file = path.abspath(from_file)
         self._all_releases = []
         self._all_resource_files = []
+        self._chart_index = None
+        self._image_index = None
 
         super(Environment, self).__init__(**data.__dict__)
         issues = self._sanity_check()
@@ -107,6 +109,37 @@ class Environment(ttypes.Environment):
     def cluster(self):
         return get_cluster(self.clusterName)
 
+    def chart_index(self) -> Dict[str, List[Tuple['Environment', Release]]]:
+        index = defaultdict(list)
+        if self._chart_index is None:
+            for rel in self.all_releases:
+                logging.debug('    - Release %s', rel.name)
+                if rel.chart is None or rel.chart.reference is None:
+                    continue
+                index[rel.chart.reference].append((self, rel,))
+            self._chart_index = index
+        return self._chart_index
+
+    def image_index(self) -> Dict[str, List[Tuple['Environment', Release]]]:
+        index = defaultdict(list)
+        if self._image_index is None:
+            logging.debug('building image index...')
+            for rel in self.all_releases:
+                logging.debug('    - Release %s', rel.name)
+                values = helm.get_resolved_values(rel, self, skip_value_from=True)
+                if rel.triggers:
+                    for t in rel.triggers:
+                        if t.image:
+                            repo = helm.lookup_value(t.image.repoValue, values)
+                            if repo is None:
+                                break
+                            prefix = helm.lookup_value(t.image.repoPrefixValue, values)
+                            if prefix is not None:
+                                repo = prefix + repo
+                            index[repo].append((self, rel,))
+            self._image_index = index
+        return self._image_index
+
 
 class Cluster(ttypes.Cluster):
     def __init__(self, data: ttypes.Cluster, from_file: str):
@@ -143,6 +176,7 @@ class KubecdConfig(ttypes.KubecdConfig):
         self._env_index = {}
         self._cluster_index = {}
         self._image_index = None
+        self._chart_index = None
         super(KubecdConfig, self).__init__(**data.__dict__)
         issues = self._sanity_check()
         if len(issues) > 0:
@@ -196,26 +230,25 @@ class KubecdConfig(ttypes.KubecdConfig):
             commands.extend(helm.repo_setup_commands(self.helmRepos))
         return commands
 
-    @property
-    def image_index(self) -> Dict[str, List[Release]]:
+    def chart_index(self) -> Dict[str, List[Tuple[Environment, Release]]]:
         index = defaultdict(list)
-        if self._image_index is None:
-            logging.debug('building image index...')
+        if self._chart_index is None:
+            logging.debug('building global chart index...')
             for env in self._environments:
                 logging.debug(' - Environment %s', env.name)
-                for rel in env.all_releases:
-                    logging.debug('    - Release %s', rel.name)
-                    values = helm.get_resolved_values(rel, env, skip_value_from=True)
-                    if rel.triggers:
-                        for t in rel.triggers:
-                            if t.image:
-                                repo = helm.lookup_value(t.image.repoValue, values)
-                                if repo is None:
-                                    break
-                                prefix = helm.lookup_value(t.image.repoPrefixValue, values)
-                                if prefix is not None:
-                                    repo = prefix + repo
-                                index[repo].append(rel)
+                for k, v in env.chart_index().items():
+                    index[k].extend(v)
+            self._chart_index = index
+        return self._chart_index
+
+    def image_index(self) -> Dict[str, List[Tuple[Environment, Release]]]:
+        index = defaultdict(list)
+        if self._image_index is None:
+            logging.debug('building global image index...')
+            for env in self._environments:
+                logging.debug(' - Environment %s', env.name)
+                for k, v in env.image_index().items():
+                    index[k].extend(v)
             self._image_index = index
         return self._image_index
 

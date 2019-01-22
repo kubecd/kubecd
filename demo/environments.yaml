@@ -23,7 +23,7 @@ environments:
     releasesFiles:
       - releases-test.yaml
     defaultValues:
-      - key: "image.prefix"
+      - key: "image.registry"
         value: "eu.gcr.io/kubecd-demo/test-"
       - key: "ingress.domain"
         value: "test.kubecd.io"
@@ -34,7 +34,7 @@ environments:
     releasesFiles:
       - releases-prod.yaml
     defaultValues:
-      - key: "image.prefix"
+      - key: "image.registry"
         value: "eu.gcr.io/kubecd-demo/prod-"
       - key: "ingress.domain"
         value: "prod.kubecd.io"

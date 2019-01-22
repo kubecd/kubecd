@@ -4,6 +4,7 @@ releases:
       dir: charts/demo-app
     trigger:
       image:
+        repoPrefixValue: "image.registry"
         track: Newest
     values:
       - key: fullnameOverride

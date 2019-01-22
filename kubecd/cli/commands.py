@@ -121,21 +121,64 @@ def diff_release(environments_file: str, releases: List[str], env: str, **kwargs
         run_command(cmd)
 
 
-def observe_new_image(environments_file: str, image: str, patch: bool, submit_pr: bool, **kwargs):
+def observe_update(environments_file: str, image: str, chart: str, patch: bool, submit_pr: bool, env: str=None, **kwargs):
+    if image is not None:
+        return observe_image_tag(environments_file, image, patch, submit_pr, env, **kwargs)
+    if chart is not None:
+        return observe_chart_version(environments_file, chart, patch, submit_pr, env, **kwargs)
+    raise CliError('observe needs --image or --chart')
+
+
+def observe_image_tag(environments_file: str, image: str, patch: bool, submit_pr: bool, env: str=None, **kwargs):
     kcd_config = _load_model(environments_file)
     image_repo, image_tag = image.split(':')
-    image_index = kcd_config.image_index
+    if env is None:
+        image_index = kcd_config.image_index()
+    else:
+        image_index = kcd_config.get_environment(env).image_index()
     patched_files = []
+    verb = 'Will' if patch else 'May'
+    update_found = False
     if image_repo in image_index:
-        for release in image_index[image_repo]:
-            update_list = updates.release_wants_tag_update(release, image_tag)
+        for env, release in image_index[image_repo]:
+            update_list = updates.release_wants_tag_update(release, image_tag, env)
             for update in update_list:
-                print('release: {release} tagValue: {tag}'.format(release=update.release.name, tag=update.tag_value))
+                print('{verb} upgrade release {release} image {image} to {tag} because {reason}'.format(
+                    verb=verb, release=update.release.name, tag=image_tag, image=image_repo, reason=update.reason))
+                update_found = True
             if len(update_list) > 0 and patch:
-                patch_releases_file(release.from_file, update_list)
+                patch_image_updates(release.from_file, update_list)
                 patched_files.append(release.from_file)
+    if not update_found:
+        print('Did not find any release wanting this image tag.')
     if submit_pr and len(patched_files) > 0:
-        github.pr_from_files(patched_files, 'Observed image {image}'.format(image=image))
+        github.pr_from_files(patched_files, 'Observed image tag {image}'.format(image=image))
+
+
+def observe_chart_version(environments_file: str, chart: str, patch: bool, submit_pr: bool, env: str=None, **kwargs):
+    kcd_config = _load_model(environments_file)
+    chart_name, new_version = chart.split(':')
+    if env is None:
+        chart_index = kcd_config.chart_index()
+    else:
+        chart_index = kcd_config.get_environment(env).chart_index()
+    patched_files = []
+    verb = 'Will' if patch else 'May'
+    update_found = False
+    if chart_name in chart_index:
+        for env, release in chart_index[chart_name]:
+            update_list = updates.release_wants_chart_update(release, new_version, env)
+            for update in update_list:
+                print('{verb} upgrade release {release} chart {chart} to {new_ver} because {reason}'.format(
+                    verb=verb, release=update.release.name, chart=chart_name, new_ver=new_version, reason=update.reason))
+                update_found = True
+            if len(update_list) > 0 and patch:
+                patch_chart_updates(release.from_file, update_list)
+                patched_files.append(release.from_file)
+    if not update_found:
+        print('Did not find any release wanting this chart version.')
+    if submit_pr and len(patched_files) > 0:
+        github.pr_from_files(patched_files, 'Observed chart version {version}'.format(image=chart))
 
 
 def apply_env(environments_file: str,
@@ -219,10 +262,10 @@ def poll_registries(environments_file, cluster=None, env=None, releases=None, pa
                         tag_to=update.new_tag,
                     ))
             if patch:
-                patch_releases_file(release_file, update_list)
+                patch_image_updates(release_file, update_list)
 
 
-def patch_releases_file(releases_file: str, updates_list: List[updates.ImageUpdate]):
+def patch_image_updates(releases_file: str, updates_list: List[updates.ImageUpdate]):
     logger.debug('loading releases file: "%s"', releases_file)
     mod_yaml = _load_yaml(releases_file)
     for update in updates_list:
@@ -239,6 +282,17 @@ def patch_releases_file(releases_file: str, updates_list: List[updates.ImageUpda
                         break
                 if not found_val:
                     mod_rel['values'].append({'key': update.tag_value, 'value': update.new_tag})
+    logger.debug('saving patched file: {file}'.format(file=releases_file))
+    _save_yaml(mod_yaml, releases_file)
+
+
+def patch_chart_updates(releases_file: str, updates_list: List[updates.ChartUpdate]):
+    logger.debug('loading releases file: "%s"', releases_file)
+    mod_yaml = _load_yaml(releases_file)
+    for update in updates_list:
+        for mod_rel in mod_yaml['releases']:
+            if mod_rel['name'] == update.release.name:
+                mod_rel['chart']['version'] = update.new_version
     logger.debug('saving patched file: {file}'.format(file=releases_file))
     _save_yaml(mod_yaml, releases_file)
 

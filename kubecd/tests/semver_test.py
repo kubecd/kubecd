@@ -10,3 +10,8 @@ def test_parse():
     assert [1, 1, 0, (), ()] == list((sut.parse('v1.1.0')))
     assert [1, 1, 0, ('2',), ('build3',)] == list((sut.parse('v1.1.0-2+build3')))
     assert [2, 0, 0, (), ()] == list(sut.parse('2.0'))
+
+
+def test_is_semver():
+    assert sut.is_semver('v1.0')
+    assert not sut.is_semver('deadbeef')

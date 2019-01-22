@@ -15,6 +15,10 @@ from .helm import key_is_in_values, lookup_value, get_resolved_values
 logger = logging.getLogger(__name__)
 
 
+class UpdateError(Exception):
+    pass
+
+
 def parse_docker_timestamp(timestamp: str) -> int:
     """
     Parse a timestamp of the format "2015-02-13T10:04:55.62062787Z" and
@@ -129,34 +133,74 @@ class ImageUpdate(object):
     """
     An object representing an image with an available update. Just type safety convenience.
     """
-    def __init__(self, new_tag: str, tag_value: str, release: Release, old_tag: str=None, image_repo: str=None):
+    def __init__(self, new_tag: str, tag_value: str, release: Release, old_tag: str=None, image_repo: str=None, reason: str=None):
         self.old_tag = old_tag
         self.new_tag = new_tag
         self.release = release
         self.tag_value = tag_value
         self.image_repo = image_repo
+        self.reason = reason
 
 
-def release_wants_tag_update(release: Release, new_tag: str) -> List[ImageUpdate]:
+class ChartUpdate(object):
+    """
+    An object representing a Helm chart with an available update. Just type safety convenience.
+    """
+    def __init__(self, release: Release, new_version: str, old_version: str=None, reason: str=None):
+        self.release = release
+        self.new_version = new_version
+        self.old_version = old_version
+        self.reason = reason
+
+
+def release_wants_tag_update(release: Release, new_tag: str, env: Environment) -> List[ImageUpdate]:
     updates = []
     for trigger in release.triggers:
         if trigger.image is None or trigger.image.tagValue is None:
             continue
-        values = get_resolved_values(release, for_env=None, skip_value_from=True)
+        values = get_resolved_values(release, for_env=env, skip_value_from=True)
         tag_value = trigger.image.tagValue
         current_tag = lookup_value(tag_value, values)
         # if the current version is not semver, consider any value to be an update
         if not semver.is_semver(current_tag):
-            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release))
+            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release,
+                                       reason='current tag "{}" not semver, any observed tag considered newer'.format(current_tag)))
             continue
         # if the new version is not semver, consider it an update only if track == Newest
         if not semver.is_semver(new_tag) and trigger.image.track == 'Newest':
-            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release))
+            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release,
+                                       reason='track=Newest, any observed tag considered newer'))
             continue
         if current_tag is not None and semver.is_wanted_upgrade(semver.parse(current_tag),
                                                                 semver.parse(new_tag),
                                                                 trigger.image.track):
-            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release))
+            updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release,
+                                       reason='track={} allows upgrade from {} to {}'.format(trigger.image.track, current_tag, new_tag)))
+    return updates
+
+
+def release_wants_chart_update(release: Release, new_version: str, env: Environment) -> List[ChartUpdate]:
+    if not semver.is_semver(new_version):
+        raise UpdateError('new_version {} is not semver'.format(new_version))
+    updates = []
+    if release.chart.version is None or release.chart.reference is None:
+        logger.debug('%s does not have chart.version and chart.reference', release.name)
+        return updates
+    if release.triggers is None:
+        return updates
+    for trigger in release.triggers:
+        if trigger.chart is None or trigger.chart.track is None:
+            continue
+        current_version = release.chart.version
+        # if the current version is not semver, consider any value to be an update
+        if not semver.is_semver(current_version):
+            logger.warning('skipping {}, current version {} is not semver'.format(release.name, current_version))
+            continue
+        if semver.is_wanted_upgrade(semver.parse(current_version),
+                                    semver.parse(new_version),
+                                    trigger.chart.track):
+            updates.append(ChartUpdate(release=release, new_version=new_version, old_version=current_version,
+                                       reason='track={} allows upgrade from {} to {}'.format(trigger.chart.track, current_version, new_version)))
     return updates
 
 

@@ -17,7 +17,7 @@ from .commands import (
     yaml2json,
     lint_environment,
     list_kind,
-    observe_new_image,
+    observe_update,
     poll_registries,
     use_env_context,
     CliError,
@@ -100,14 +100,18 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
     indent_p.set_defaults(func=indent_file)
 
     observe = s.add_parser('observe',
-                           help='observe a new image version')
+                           help='observe a new version')
+    observe.add_argument('env', nargs='?',
+                         help='restrict update patches to this environment')
     observe.add_argument('--image', '-i', metavar='IMAGE:TAG',
-                         help='the image, including tag')
+                         help='a new image, including tag')
+    observe.add_argument('--chart', metavar='CHART:VERSION',
+                         help='a new chart version')
     observe.add_argument('--patch', action='store_true', default=False,
                          help='patch release files with updated tags')
     observe.add_argument('--submit-pr', action='store_true', default=False,
                          help='submit a pull request with the updated tags')
-    observe.set_defaults(func=observe_new_image)
+    observe.set_defaults(func=observe_update)
 
     completion_p = s.add_parser('completion',
                                 help='print shell completion script')
