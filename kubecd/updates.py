@@ -166,8 +166,8 @@ def release_wants_tag_update(release: Release, new_tag: str, env: Environment) -
             updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release,
                                        reason='current tag "{}" not semver, any observed tag considered newer'.format(current_tag)))
             continue
-        # if the new version is not semver, consider it an update only if track == Newest
-        if not semver.is_semver(new_tag) and trigger.image.track == 'Newest':
+        # consider any new version an update if track == Newest
+        if trigger.image.track == 'Newest':
             updates.append(ImageUpdate(new_tag=new_tag, tag_value=tag_value, release=release,
                                        reason='track=Newest, any observed tag considered newer'))
             continue

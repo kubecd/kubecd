@@ -6,6 +6,8 @@ from unittest.mock import patch
 import pytest
 
 from .. import updates as sut
+from .. import model
+from .. import gen_py
 
 TEST_DOCKER_HUB_TAGS_URL = 'https://registry.hub.docker.com/v2/repositories/confluentinc/cp-kafka/tags?page_size=256'
 TEST_REGISTRY_TAGS_URL = 'https://docker.example.net:5001/v2/example/application/tags/list'
@@ -154,3 +156,42 @@ def docker_registry_v2_expected_tags() -> Dict[str, int]:
         'test': 1423821895,
         'latest': 1437468476,
     }
+
+
+@pytest.fixture
+def release1() -> model.Release:
+    return model.Release(gen_py.ttypes.Release(
+        name='release1',
+        chart=gen_py.ttypes.Chart(
+            reference='repo1/chart1',
+            version='1.0.0',
+        ),
+        values=[
+            gen_py.ttypes.ChartValue(key='image.tag', value='1.0.0'),
+        ],
+        triggers=[
+            gen_py.ttypes.ReleaseUpdateTrigger(
+                image=gen_py.ttypes.ImageTrigger(track='Newest'),
+            )
+        ],
+    ), 'releases.yaml')
+
+
+@pytest.fixture
+def env1() -> model.Environment:
+    return model.Environment(gen_py.ttypes.Environment(
+        name='env1',
+        clusterName='cluster1',
+        kubeNamespace='default',
+        defaultValues=[
+            gen_py.ttypes.ChartValue(key='key', value='value'),
+        ],
+        releasesFiles=[],
+    ), 'environments.yaml')
+
+
+# @patch('kubecd.updates.get_resolved_values')
+# def test_release_wants_tag_update(mock_grv, release1, env1):
+#     mock_grv.return_value = {'image': {'prefix':'', 'repository': 'image', 'tag': '1.0.0'}}
+#     # def release_wants_tag_update(release: Release, new_tag: str, env: Environment) -> List[ImageUpdate]:
+#     assert [] == sut.release_wants_tag_update(release1, '1.0.1', env1)
