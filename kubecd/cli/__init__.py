@@ -107,6 +107,8 @@ def parser(prog='kcd') -> argparse.ArgumentParser:
                          help='a new image, including tag')
     observe.add_argument('--chart', metavar='CHART:VERSION',
                          help='a new chart version')
+    observe.add_argument('--verify', action='store_true', default=False,
+                         help='verify that image:tag exists')
     observe.add_argument('--patch', action='store_true', default=False,
                          help='patch release files with updated tags')
     observe.add_argument('--submit-pr', action='store_true', default=False,

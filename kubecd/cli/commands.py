@@ -129,9 +129,13 @@ def observe_update(environments_file: str, image: str, chart: str, patch: bool, 
     raise CliError('observe needs --image or --chart')
 
 
-def observe_image_tag(environments_file: str, image: str, patch: bool, submit_pr: bool, env: str=None, **kwargs):
-    kcd_config = _load_model(environments_file)
+def observe_image_tag(environments_file: str, image: str, patch: bool, submit_pr: bool, env: str=None, verify: bool=False, **kwargs):
     image_repo, image_tag = image.split(':')
+    if verify:
+        existing_tags = updates.get_tags_for_image(image_repo)
+        if image_tag not in existing_tags:
+            raise CliError('image:tag "{}" not found in registry'.format(image))
+    kcd_config = _load_model(environments_file)
     if env is None:
         image_index = kcd_config.image_index()
     else:
