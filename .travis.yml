@@ -3,7 +3,7 @@ services:
   - docker
 language: python
 python:
-  - '3.5'
+  - '3.7'
 before_install:
   - make
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
@@ -12,10 +12,3 @@ install:
 script:
   - pytest
   - flake8
-  - docker build -t zedge/kubecd:latest .
-deploy:
-  - provider: script
-    script: docker push zedge/kubecd:latest
-    on:
-      branch: master
-      python: '3.5'

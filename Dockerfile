@@ -4,7 +4,7 @@ COPY idl/ /idl
 RUN mkdir /gen_py && thrift -out /gen_py -gen py:dynamic idl/github.com/zedge/kubecd/kubecd.thrift
 
 # Run tests and install package
-FROM python:3.5 AS build
+FROM python:3.7 AS build
 COPY *.py requirements*.txt README.md /build/
 COPY kubecd/ /build/kubecd/
 WORKDIR /build
@@ -15,11 +15,11 @@ RUN python setup.py clean sdist
 
 # Grab package from build step and install in a clean Python image,
 # along with kubectl, helm, gcloud, ssh and git
-FROM python:3.5
-ARG KUBECTL_VERSION=1.9.7
+FROM python:3.7
+ARG KUBECTL_VERSION=1.11.7
 ARG HELM_VERSION=2.9.1
-ARG GCLOUD_VERSION=204.0.0
-ARG HUB_VERSION=2.2.9
+ARG GCLOUD_VERSION=230.0.0
+ARG HUB_VERSION=2.8.4
 COPY --from=build /build/dist/kubecd-*.tar.gz /tmp/
 RUN pip install /tmp/kubecd-*.tar.gz
 RUN curl -Ls https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl \
