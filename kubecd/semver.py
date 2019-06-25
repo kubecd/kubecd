@@ -33,7 +33,7 @@ def filter_semver_tags(tags: List[str]) -> List[str]:
     return output
 
 
-def best_upgrade(current: Version, candidates: List[Version], track: str='MajorVersion'):
+def best_upgrade(current: Version, candidates: List[Version], track: str = 'MajorVersion'):
     if track == 'PatchLevel':
         spec = Spec('>{current},<{next_minor}'.format(current=str(current), next_minor=str(current.next_minor())))
     elif track == 'MinorVersion':
@@ -45,6 +45,6 @@ def best_upgrade(current: Version, candidates: List[Version], track: str='MajorV
     return spec.select(candidates)
 
 
-def is_wanted_upgrade(current: Version, candidate: Version, track: str='MajorVersion'):
+def is_wanted_upgrade(current: Version, candidate: Version, track: str = 'MajorVersion'):
     best = best_upgrade(current, [candidate], track)
     return best == candidate
