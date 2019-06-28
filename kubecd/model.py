@@ -41,7 +41,7 @@ class Release(ttypes.Release):
             issues.append('must define only one of "chart" or "resourceFiles"')
         if self.chart is not None:
             if self.chart.reference is not None and self.chart.version is None:
-                issues.append('must have a chart.version for {}'.format(self.chart.name))
+                issues.append('must have a chart.version for {}'.format(self.chart.reference))
         if self.trigger and self.triggers:
             issues.append('must define only one of "trigger" or "triggers"')
         return issues
@@ -79,12 +79,12 @@ class Environment(ttypes.Environment):
                 self._all_releases.append(Release(rel, from_file=abs_file))
 
     def _sanity_check(self):
-        counts = defaultdict(int)
+        seen = defaultdict(bool)
         issues = []
-        for env in self.all_releases:
-            if env.name in counts:
-                issues.append('duplicate environment name: {}'.format(env.name))
-            counts[env.name] += 1
+        for rel in self.all_releases:
+            if rel.name in seen:
+                issues.append('duplicate release name: {}'.format(rel.name))
+            seen[rel.name] = True
         return issues
 
     @property
