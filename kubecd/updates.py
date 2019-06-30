@@ -240,7 +240,7 @@ def find_updates_for_release(release: Release, environment: Environment) -> Dict
     return updates
 
 
-def find_updates_for_releases(releases: List[Release], environment: Environment) -> Dict[str, List[ImageUpdate]]:
+def find_image_updates_for_releases(releases: List[Release], environment: Environment) -> Dict[str, List[ImageUpdate]]:
     env_updates = defaultdict(list)
     for release in releases:
         logger.info('checking updates for release: {env}/{release}'.format(env=environment.name, release=release.name))
@@ -251,7 +251,7 @@ def find_updates_for_releases(releases: List[Release], environment: Environment)
     return env_updates
 
 
-def find_updates_for_env(environment: Environment) -> Dict[str, List[ImageUpdate]]:
+def find_image_updates_for_env(environment: Environment) -> Dict[str, List[ImageUpdate]]:
     env_updates = defaultdict(list)
     for release in environment.all_releases:
         logger.info('checking updates for release: {env}/{release}'.format(env=environment.name, release=release.name))

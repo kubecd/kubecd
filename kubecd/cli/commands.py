@@ -14,7 +14,7 @@ from .. import model
 from ..inspection import validate_environment
 from ..providers import get_cluster_provider
 from ..thriftutils import SchemaError
-from ..updates import find_updates_for_env, find_updates_for_releases
+from ..updates import find_image_updates_for_env, find_image_updates_for_releases
 
 t = Terminal()
 logger = logging.getLogger(__name__)
@@ -249,11 +249,11 @@ def poll_registries(environments_file, cluster=None, env=None, releases=None, pa
     for te in target_envs:
         if releases is None:
             logger.info('polling environment: "%s"', te.name)
-            file_updates = find_updates_for_env(te)
+            file_updates = find_image_updates_for_env(te)
         else:
             release_objs = [te.named_release(r) for r in releases]
             logger.info('polling env:%s releases: %s', te.name, ' '.join(releases))
-            file_updates = find_updates_for_releases(release_objs, te)
+            file_updates = find_image_updates_for_releases(release_objs, te)
         for release_file, update_list in file_updates.items():
             for update in update_list:
                 print(
