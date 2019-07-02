@@ -16,36 +16,56 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"os"
+	"path"
 
 	"github.com/spf13/cobra"
 )
 
+const defaultIndentLevel = 2
+var indentLevel int
+
 // indentCmd represents the indent command
 var indentCmd = &cobra.Command{
-	Use:   "indent",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "indent file [file...]",
+	Short: "canonically indent YAML files",
+	Long:  ``,
+	Args:  cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		for _, file := range args {
+			var rawObject yaml.Node
+			data, err := ioutil.ReadFile(file)
+			if err != nil {
+				return errors.Wrapf(err, `error reading %q`, file)
+			}
+			err = yaml.Unmarshal(data, &rawObject)
+			if err != nil {
+				return errors.Wrapf(err, `error decoding yaml in %q`, file)
+			}
+			tmpFile, err := ioutil.TempFile(path.Dir(file), path.Base(file)+"*")
+			if err != nil {
+				return errors.Wrapf(err, `error creating tmpfile for %q`, file)
+			}
+			//noinspection GoDeferInLoop
+			defer func() { _ = os.Remove(tmpFile.Name()) }()
+			encoder := yaml.NewEncoder(tmpFile)
+			encoder.SetIndent(indentLevel)
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("indent called")
+			if err = encoder.Encode(&rawObject); err != nil {
+				return errors.Wrapf(err, `error re-encoding `)
+			}
+			if err = os.Rename(tmpFile.Name(), file); err != nil {
+				return errors.Wrapf(err, `error renaming %q to %q`, tmpFile.Name(), file)
+			}
+		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(indentCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// indentCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// indentCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	indentCmd.Flags().IntVar(&indentLevel, "indent-level", defaultIndentLevel, "set indentation level")
 }
