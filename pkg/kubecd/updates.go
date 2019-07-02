@@ -315,7 +315,7 @@ func FindImageUpdatesForRelease(release *model.Release, env *model.Environment) 
 			}
 			updatedTag := GetNewestMatchingTag(imageTag, allTags, trigger.Image.Track, tagTimestamp)
 			if updatedTag != "" {
-				relFile := release.FromFile()
+				relFile := release.FromFile
 				if _, found := updates[relFile]; !found {
 					updates[relFile] = make([]ImageUpdate, 1)
 				}

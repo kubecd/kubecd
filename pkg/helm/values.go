@@ -31,8 +31,9 @@ func pathExists(path string) bool {
 		if os.IsNotExist(err) {
 			return true
 		}
+		return false
 	}
-	return false
+	return true
 }
 
 // InspectChart :
@@ -110,8 +111,8 @@ func DeployCommands(env *model.Environment, dryRun, debug bool, limitToReleases 
 		}
 	}
 	for _, release := range env.AllReleases() {
-		if limitToReleases == nil || stringInSlice(release.Name, limitToReleases) {
-			relFile := release.FromFile()
+		if len(limitToReleases) == 0 || stringInSlice(release.Name, limitToReleases) {
+			relFile := release.FromFile
 			if release.Chart != nil {
 				tmp, err := GenerateHelmApplyArgv(release, env, dryRun, debug)
 				if err != nil {
@@ -161,7 +162,7 @@ func GenerateHelmValuesArgv(rel *model.Release, env *model.Environment) ([]strin
 		}
 	}
 	if rel.ValuesFile != nil {
-		argv = append(argv, rel.AbsPath(*rel.ValuesFile))
+		argv = append(argv, "--values", rel.AbsPath(*rel.ValuesFile))
 	}
 	if rel.Values != nil {
 		setArg, err := formatSetValuesString(rel.Values, env, false)
@@ -177,7 +178,7 @@ func GenerateHelmChartArgs(rel *model.Release) ([]string, error) {
 	if rel.Chart.Reference == nil {
 		chartDir := rel.AbsPath(*rel.Chart.Dir)
 		if !pathExists(chartDir) {
-			return []string{}, fmt.Errorf(`%s: release %q chart.dir %q does not exist`, rel.FromFile(), rel.Name, chartDir)
+			return []string{}, fmt.Errorf(`%s: release %q chart.dir %q does not exist`, rel.FromFile, rel.Name, chartDir)
 		}
 		return []string{chartDir}, nil
 	}

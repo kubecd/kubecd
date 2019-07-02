@@ -45,8 +45,12 @@ func NewConfig(reader io.Reader, fromFile string) (*KubeCDConfig, error) {
 	}
 	for _, env := range config.Environments {
 		env.Cluster = config.GetCluster(env.ClusterName)
+		env.fromFile = fromFile
 		if env.Cluster == nil {
 			return nil, fmt.Errorf(`environment %q refers to undefined Cluster %q`, env.Name, env.ClusterName)
+		}
+		if err = env.populateReleases(); err != nil {
+			return nil, err
 		}
 	}
 	return config, nil

@@ -31,20 +31,27 @@ func NewEnvironment(reader io.Reader, envFile string) (*Environment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshaling Environment from %s: %v", envFile, err)
 	}
-	for _, releaseListFile := range env.ReleasesFiles {
-		releaseList, err := NewReleaseListFromFile(ResolvePathFromFile(releaseListFile, envFile))
-		if err != nil {
-			return nil, fmt.Errorf(`environment %q: %v`, env.Name, err)
-		}
-		for _, rel := range releaseList.Releases {
-			env.Releases = append(env.Releases, rel)
-		}
+	if err = env.populateReleases(); err != nil {
+		return nil, err
 	}
-
 	if issues := env.sanityCheck(); len(issues) > 0 {
 		return nil, fmt.Errorf("issues found in Environment %q: %v", env.Name, issues)
 	}
 	return env, nil
+}
+
+func (e *Environment) populateReleases() error {
+	for _, releaseListFile := range e.ReleasesFiles {
+		releaseList, err := NewReleaseListFromFile(ResolvePathFromFile(releaseListFile, e.fromFile))
+		if err != nil {
+			return fmt.Errorf(`environment %q: %v`, e.Name, err)
+		}
+		for _, rel := range releaseList.Releases {
+			e.Releases = append(e.Releases, rel)
+		}
+	}
+
+	return nil
 }
 
 func (e *Environment) sanityCheck() []error {

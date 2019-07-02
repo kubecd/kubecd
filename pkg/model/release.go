@@ -9,7 +9,6 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-
 type Release struct {
 	Name              string                 `json:"name"`
 	Chart             *Chart                 `json:"chart,omitempty"`
@@ -20,36 +19,36 @@ type Release struct {
 	SkipDefaultValues bool                   `json:"skipDefaultValues,omitempty"`
 	ResourceFiles     []string               `json:"resourceFiles,omitempty"`
 
-	fromFile string
+	FromFile string `json:"-"`
 }
 
 type ReleaseList struct {
-	ResourceFiles []string  `json:"resourceFiles,omitempty"`
+	ResourceFiles []string   `json:"resourceFiles,omitempty"`
 	Releases      []*Release `json:"releases,omitempty"`
 
-	fromFile string
+	FromFile string
 }
 
-func NewRelease(reader io.Reader, fromFile string) (*Release, error) {
-	data, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("error while reading %s: %v", fromFile, err)
-	}
-	release := &Release{fromFile: fromFile}
-	err = yaml.Unmarshal(data, release)
-	if err != nil {
-		return nil, fmt.Errorf("error while unmarshaling Release from %s: %v", fromFile, err)
-	}
-	if issues := release.sanityCheck(); len(issues) > 0 {
-		return nil, fmt.Errorf("issues found in Release %q: %v", release.Name, issues)
-	}
-	return release, nil
-}
+//func NewRelease(reader io.Reader, FromFile string) (*Release, error) {
+//	data, err := ioutil.ReadAll(reader)
+//	if err != nil {
+//		return nil, fmt.Errorf("error while reading %s: %v", FromFile, err)
+//	}
+//	release := &Release{FromFile: FromFile}
+//	err = yaml.Unmarshal(data, release)
+//	if err != nil {
+//		return nil, fmt.Errorf("error while unmarshaling Release from %s: %v", FromFile, err)
+//	}
+//	if issues := release.sanityCheck(); len(issues) > 0 {
+//		return nil, fmt.Errorf("issues found in Release %q: %v", release.Name, issues)
+//	}
+//	return release, nil
+//}
 
-func NewReleaseListFromFile(fromFile string ) (*ReleaseList, error) {
+func NewReleaseListFromFile(fromFile string) (*ReleaseList, error) {
 	r, err := os.Open(fromFile)
 	if err != nil {
-		return nil, fmt.Errorf("error while opening %s: %v",fromFile, err)
+		return nil, fmt.Errorf("error while opening %s: %v", fromFile, err)
 	}
 	return NewReleaseList(r, fromFile)
 }
@@ -59,10 +58,13 @@ func NewReleaseList(reader io.Reader, fromFile string) (*ReleaseList, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while reading %s: %v", fromFile, err)
 	}
-	releaseList := &ReleaseList{fromFile: fromFile}
+	releaseList := &ReleaseList{FromFile: fromFile}
 	err = yaml.Unmarshal(data, releaseList)
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshaling Release from %s: %v", fromFile, err)
+	}
+	for _, release := range releaseList.Releases {
+		release.FromFile = fromFile
 	}
 	return releaseList, nil
 }
@@ -83,12 +85,8 @@ func (r *Release) sanityCheck() []error {
 	return issues
 }
 
-func (r *Release) FromFile() string {
-	return r.fromFile
-}
-
 func (r *Release) AbsPath(path string) string {
-	return ResolvePathFromFile(path, r.fromFile)
+	return ResolvePathFromFile(path, r.FromFile)
 }
 
 func (l *ReleaseList) sanityCheck() []error {

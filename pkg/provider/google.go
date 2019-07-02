@@ -23,7 +23,8 @@ func (p *GkeClusterProvider) GetClusterInitCommands() ([][]string, error) {
 }
 
 func (p *GkeClusterProvider) GetClusterName() string {
-	return p.Provider.GKE.ClusterName
+	// 'gke_{gke.project}_{zone_or_region}_{gke.clusterName}'
+	return fmt.Sprintf("gke_%s_%s_%s", p.Provider.GKE.Project, regionOrZone(p.Provider.GKE), p.Provider.GKE.ClusterName)
 }
 
 func regionOrZone(gke *model.GkeProvider) string {
