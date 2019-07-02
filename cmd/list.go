@@ -17,28 +17,55 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"github.com/zedge/kubecd/pkg/model"
 )
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+	Use:   "list {env,release,cluster}",
+	Short: "list clusters, environments or releases",
+	Long: ``,
+	Args: matchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+	ValidArgs: []string{"env", "envs", "release", "releases", "cluster", "clusters"},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
+		if err != nil {
+			return err
+		}
+		switch args[0] {
+		case "env", "envs":
+			for _, env := range kcdConfig.Environments {
+				fmt.Println(env.Name)
+			}
+		case "release", "releases":
+			for _, env := range kcdConfig.Environments {
+				for _, release := range env.AllReleases() {
+					fmt.Printf("%s -r %s\n", env.Name, release.Name)
+				}
+			}
+		case "cluster", "clusters":
+			for _, cluster := range kcdConfig.AllClusters() {
+				fmt.Println(cluster.Name)
+			}
+		}
+		return nil
 	},
+}
+
+func matchAll(checks ...cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		for _, check := range checks {
+			if err := check(cmd, args); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
