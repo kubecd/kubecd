@@ -13,4 +13,3 @@ type RealRunner struct{}
 func (r RealRunner) Run(cmd string, args ...string) ([]byte, error) {
 	return osexec.Command(cmd, args...).Output()
 }
-

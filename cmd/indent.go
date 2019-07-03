@@ -25,8 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultIndentLevel = 2
-var indentLevel int
+const indentLevel = 2
 
 // indentCmd represents the indent command
 var indentCmd = &cobra.Command{
@@ -45,20 +44,8 @@ var indentCmd = &cobra.Command{
 			if err != nil {
 				return errors.Wrapf(err, `error decoding yaml in %q`, file)
 			}
-			tmpFile, err := ioutil.TempFile(path.Dir(file), path.Base(file)+"*")
-			if err != nil {
-				return errors.Wrapf(err, `error creating tmpfile for %q`, file)
-			}
-			//noinspection GoDeferInLoop
-			defer func() { _ = os.Remove(tmpFile.Name()) }()
-			encoder := yaml.NewEncoder(tmpFile)
-			encoder.SetIndent(indentLevel)
-
-			if err = encoder.Encode(&rawObject); err != nil {
-				return errors.Wrapf(err, `error re-encoding `)
-			}
-			if err = os.Rename(tmpFile.Name(), file); err != nil {
-				return errors.Wrapf(err, `error renaming %q to %q`, tmpFile.Name(), file)
+			if err = writeIndentedYamlToFile(file, rawObject); err != nil {
+				return err
 			}
 		}
 		return nil
@@ -67,5 +54,22 @@ var indentCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(indentCmd)
-	indentCmd.Flags().IntVar(&indentLevel, "indent-level", defaultIndentLevel, "set indentation level")
+}
+
+func writeIndentedYamlToFile(fileName string, v interface{}) error {
+	tmpFile, err := ioutil.TempFile(path.Dir(fileName), path.Base(fileName)+"*")
+	if err != nil {
+		return errors.Wrapf(err, `error creating tmpfile for %q`, fileName)
+	}
+	//noinspection GoDeferInLoop
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	encoder := yaml.NewEncoder(tmpFile)
+	encoder.SetIndent(indentLevel)
+	if err = encoder.Encode(&v); err != nil {
+		return errors.Wrapf(err, `error re-encoding `)
+	}
+	if err = os.Rename(tmpFile.Name(), fileName); err != nil {
+		return errors.Wrapf(err, `error renaming %q to %q`, tmpFile.Name(), fileName)
+	}
+	return nil
 }

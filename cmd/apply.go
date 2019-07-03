@@ -17,28 +17,25 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mitchellh/colorstring"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zedge/kubecd/pkg/helm"
 	"github.com/zedge/kubecd/pkg/model"
-	"github.com/zedge/kubecd/pkg/provider"
-	"os"
-	"os/exec"
-	"strings"
 )
 
 var applyReleases []string
 var applyCluster string
 var applyInit bool
 var applyGitlab bool
+var applyDryRun bool
+var applyDebug bool
 
 // applyCmd represents the apply command
 var applyCmd = &cobra.Command{
 	Use:   "apply",
 	Short: "apply changes to Kubernetes",
-	Long: ``,
-	Args: cobra.RangeArgs(0, 1),
+	Long:  ``,
+	Args:  clusterFlagOrEnvArg(&applyCluster),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
 		if err != nil {
@@ -53,14 +50,8 @@ var applyCmd = &cobra.Command{
 			return err
 		}
 		for _, argv := range commandsToRun {
-			printCmd := strings.Join(argv, " ")
-			_, _ = colorstring.Printf("[yellow]%s\n", printCmd)
-			cmd := exec.Command(argv[0], argv[1:]...)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err := cmd.Run()
-			if err != nil {
-				return errors.Wrapf(err, "command failed: %q", printCmd)
+			if err = runCommand(applyDryRun, argv); err != nil {
+				return err
 			}
 		}
 		return nil
@@ -69,29 +60,17 @@ var applyCmd = &cobra.Command{
 
 func commandsToApply(envsToApply []*model.Environment) ([][]string, error) {
 	commandsToRun := make([][]string, 0)
-	clusterInitialized := make(map[string]bool)
 	for _, env := range envsToApply {
-		cluster := env.GetCluster()
-		cp, err := provider.GetClusterProvider(cluster, applyGitlab)
-		if err != nil {
-			return nil, err
-		}
 		if applyInit {
-			if _, initialized := clusterInitialized[cluster.Name]; !initialized {
-				cmds, err := cp.GetClusterInitCommands()
-				if err != nil {
-					return nil, err
-				}
-				for _, cmd := range cmds {
-					commandsToRun = append(commandsToRun, cmd)
-				}
+			initCmds, err := commandsToInit(envsToApply, applyGitlab)
+			if err != nil {
+				return nil, err
 			}
-			clusterInitialized[cluster.Name] = true
-			for _, cmd := range provider.GetContextInitCommands(cp, env) {
+			for _, cmd := range initCmds {
 				commandsToRun = append(commandsToRun, cmd)
 			}
 		}
-		deployCmds, err := helm.DeployCommands(env, dryRun, debug, applyReleases)
+		deployCmds, err := helm.DeployCommands(env, applyDryRun, applyDebug, applyReleases)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +81,7 @@ func commandsToApply(envsToApply []*model.Environment) ([][]string, error) {
 	return commandsToRun, nil
 }
 
-func environmentsToApply(kcdConfig *model.KubeCDConfig, args []string) ([]*model.Environment, error) {
+func environmentsFromArgs(kcdConfig *model.KubeCDConfig, cluster string, args []string) ([]*model.Environment, error) {
 	if len(args) > 0 {
 		for _, envName := range args {
 			env := kcdConfig.GetEnvironment(envName)
@@ -112,19 +91,23 @@ func environmentsToApply(kcdConfig *model.KubeCDConfig, args []string) ([]*model
 			return []*model.Environment{env}, nil
 		}
 	}
-	if applyCluster == "" {
-		return nil, errors.New(`must apply either --cluster or [env...]`)
+	if cluster == "" {
+		return nil, errors.New(`specify --cluster flag or ENV arg`)
 	}
-	if !kcdConfig.HasCluster(applyCluster) {
-		return nil, fmt.Errorf(`unknown cluster: %q`, applyCluster)
+	if !kcdConfig.HasCluster(cluster) {
+		return nil, fmt.Errorf(`unknown cluster: %q`, cluster)
 	}
-	return kcdConfig.GetEnvironmentsInCluster(applyCluster), nil
+	return kcdConfig.GetEnvironmentsInCluster(cluster), nil
+}
+
+func environmentsToApply(kcdConfig *model.KubeCDConfig, args []string) ([]*model.Environment, error) {
+	return environmentsFromArgs(kcdConfig, applyCluster, args)
 }
 
 func init() {
 	rootCmd.AddCommand(applyCmd)
-	applyCmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "dry run mode, only print commands")
-	applyCmd.Flags().BoolVar(&debug, "debug", false, "run helm with --debug")
+	applyCmd.Flags().BoolVarP(&applyDryRun, "dry-run", "n", false, "dry run mode, only print commands")
+	applyCmd.Flags().BoolVar(&applyDebug, "debug", false, "run helm with --debug")
 	applyCmd.Flags().StringSliceVarP(&applyReleases, "releases", "r", []string{}, "apply only these releases")
 	applyCmd.Flags().StringVarP(&applyCluster, "cluster", "c", "", "apply all environments in CLUSTER")
 	applyCmd.Flags().BoolVar(&applyInit, "init", false, "initialize credentials and contexts")

@@ -138,7 +138,7 @@ func GenerateHelmBaseArgv(env *model.Environment) []string {
 func formatSetValuesString(values []model.ChartValue, env *model.Environment, skipValuesFrom bool) (string, error) {
 	tmp := make([]string, len(values))
 	for i, val := range values {
-		rv, err := ResolveValue(val, env, false)
+		rv, err := ResolveValue(val, env)
 		if err != nil {
 			return "", err
 		}
@@ -236,9 +236,9 @@ func GenerateHelmApplyArgv(rel *model.Release, env *model.Environment, dryRun, d
 	return argv, nil
 }
 
-func ResolveValue(value model.ChartValue, env *model.Environment, skipValueFrom bool) (*model.ChartValue, error) {
+func ResolveValue(value model.ChartValue, env *model.Environment) (*model.ChartValue, error) {
 	retVal := &model.ChartValue{Key: value.Key, Value: value.Value}
-	if skipValueFrom || value.ValueFrom == nil {
+	if env == nil || value.ValueFrom == nil {
 		return retVal, nil
 	}
 	if gceRes := value.ValueFrom.GceResource; gceRes != nil {
@@ -321,10 +321,10 @@ func valToMap(key []string, value interface{}) map[string]interface{} {
 	return map[string]interface{}{key[0]: valToMap(key[1:], value)}
 }
 
-func ValuesListToMap(values []model.ChartValue, env *model.Environment, skipValueFrom bool) (map[string]interface{}, error) {
+func ValuesListToMap(values []model.ChartValue, env *model.Environment) (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
 	for _, value := range values {
-		value, err := ResolveValue(value, env, false)
+		value, err := ResolveValue(value, env)
 		if err != nil {
 			return nil, err
 		}
@@ -361,13 +361,15 @@ func KeyIsInValues(key string, values map[string]interface{}) bool {
 	return LookupValueByString(key, values) != nil
 }
 
-func GetResolvedValues(release *model.Release, forEnv *model.Environment, skipValueFrom bool) (map[string]interface{}, error) {
+func GetResolvedValues(release *model.Release) (map[string]interface{}, error) {
 	values := make(map[string]interface{})
+	forEnv := release.Environment
 	if release.Chart != nil && release.Chart.Dir != nil {
-		valuesFile := model.ResolvePathFromDir("values.yaml", *release.Chart.Dir)
+		valuesFile := release.AbsPath(model.ResolvePathFromDir("values.yaml", *release.Chart.Dir))
 		if pathExists(valuesFile) {
 			chartValues, err := LoadValuesFile(valuesFile)
 			if err != nil {
+				panic(err)
 				return nil, fmt.Errorf(`failed to load values file %q for chart dir %q: %v`, valuesFile, *release.Chart.Dir, err)
 			}
 			values = MergeValues(chartValues, values)
@@ -383,7 +385,7 @@ func GetResolvedValues(release *model.Release, forEnv *model.Environment, skipVa
 		}
 	}
 	if forEnv != nil && forEnv.DefaultValues != nil {
-		envDefaultValues, err := ValuesListToMap(forEnv.DefaultValues, forEnv, skipValueFrom)
+		envDefaultValues, err := ValuesListToMap(forEnv.DefaultValues, forEnv)
 		if err != nil {
 			return nil, fmt.Errorf(`failed to resolve defaultValues for env %q and release %q: %v`, forEnv.Name, release.Name, err)
 		}
@@ -397,12 +399,25 @@ func GetResolvedValues(release *model.Release, forEnv *model.Environment, skipVa
 		}
 		values = MergeValues(releaseFileValues, values)
 	}
-	if forEnv != nil && release.Values != nil {
-		releaseValues, err := ValuesListToMap(release.Values, forEnv, skipValueFrom)
+	if release.Values != nil {
+		releaseValues, err := ValuesListToMap(release.Values, forEnv)
 		if err != nil {
 			return nil, fmt.Errorf(`failed to resolve inline values for release %q: %v`, release.Name, err)
 		}
 		values = MergeValues(releaseValues, values)
 	}
 	return values, nil
+}
+
+func GetImageRepoFromImageTrigger(trigger *model.ImageTrigger, values map[string]interface{}) string {
+	repoValue := trigger.RepoValueString()
+	repo := LookupValueByString(repoValue, values).(*string)
+	if repo == nil {
+		return ""
+	}
+	prefix := LookupValueByString(trigger.RepoPrefixValueString(), values).(*string)
+	if prefix != nil {
+		*repo = *prefix + *repo
+	}
+	return *repo
 }

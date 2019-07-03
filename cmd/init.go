@@ -16,35 +16,94 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zedge/kubecd/pkg/helm"
+	"github.com/zedge/kubecd/pkg/model"
+	"github.com/zedge/kubecd/pkg/provider"
 )
+
+var initCluster string
+var initContextsOnly bool
+var initDryRun bool
+var initGitlabMode bool
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("init called")
+	Use:   "init [ENV]",
+	Short: "Initialize credentials and contexts",
+	Long:  ``,
+	Args:  clusterFlagOrEnvArg(&initCluster),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
+		if err != nil {
+			return err
+		}
+		cmds := helm.RepoSetupCommands(kcdConfig.HelmRepos)
+		envsToInit, err := environmentsFromArgs(kcdConfig, initCluster, args)
+		if err != nil {
+			return err
+		}
+		initCmds, err := commandsToInit(envsToInit, initGitlabMode)
+		if err != nil {
+			return err
+		}
+		cmds = append(cmds, initCmds...)
+		for _, argv := range cmds {
+			if err = runCommand(initDryRun, argv); err != nil {
+				return err
+			}
+		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
+	initCmd.Flags().StringVar(&initCluster, "cluster", "", "Initialize contexts for all environments in a cluster")
+	initCmd.Flags().BoolVar(&initContextsOnly, "contexts-only", false, "initialize contexts only, assuming that cluster credentials are set up")
+	initCmd.Flags().BoolVarP(&initDryRun, "dry-run", "n", false, "print commands instead of running them")
+	initCmd.Flags().BoolVar(&initGitlabMode, "gitlab", false, "grab kube config from GitLab environment")
+}
 
-	// Here you will define your flags and configuration settings.
+func commandsToInit(envs []*model.Environment, gitlabMode bool) ([][]string, error) {
+	commands := make([][]string, 0)
+	clusterInitialized := make(map[string]bool)
+	for _, env := range envs {
+		cluster := env.GetCluster()
+		cp, err := provider.GetClusterProvider(cluster, gitlabMode)
+		if err != nil {
+			return nil, err
+		}
+		if _, initialized := clusterInitialized[cluster.Name]; !initialized {
+			cmds, err := cp.GetClusterInitCommands()
+			if err != nil {
+				return nil, err
+			}
+			commands = append(commands, cmds...)
+		}
+		clusterInitialized[cluster.Name] = true
+		commands = append(commands, provider.GetContextInitCommands(cp, env)...)
+	}
+	return commands, nil
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// initCmd.PersistentFlags().String("foo", "", "A help for foo")
+func clusterFlagOrEnvArg(clusterFlag *string) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if *clusterFlag == "" && len(args) != 1 {
+			return errors.New("specify --cluster flag or ENV arg")
+		}
+		return nil
+	}
+}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func matchAll(checks ...cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		for _, check := range checks {
+			if err := check(cmd, args); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }

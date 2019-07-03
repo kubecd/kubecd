@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	TrackPatchLevel = "PatchLevel"
+	TrackPatchLevel   = "PatchLevel"
 	TrackMinorVersion = "MinorVersion"
 	TrackMajorVersion = "MajorVersion"
-	TrackNewest = "Newest"
+	TrackNewest       = "Newest"
 )
 
 func IsSemver(version string) bool {
@@ -34,9 +34,9 @@ func BestUpgrade(current *mmsemver.Version, candidates []*mmsemver.Version, trac
 	var err error
 	switch track {
 	case TrackPatchLevel:
-		spec, err = mmsemver.NewConstraint("~" + current.String())
+		spec, err = mmsemver.NewConstraint("~" + current.String() + ", >" + current.String())
 	case TrackMinorVersion:
-		spec, err = mmsemver.NewConstraint("^" + current.String())
+		spec, err = mmsemver.NewConstraint("^" + current.String() + ", >" + current.String())
 	case TrackMajorVersion:
 		spec, err = mmsemver.NewConstraint(">" + current.String())
 	default:

@@ -30,16 +30,24 @@ type DockerImageRef struct {
 	Tag      string
 }
 
+func NewDockerImageRef(repo string) *DockerImageRef {
+	return parseImageRepo(repo)
+}
+
 func (r *DockerImageRef) RegistryURL() string {
 	return "https://" + r.Registry
 }
 
-func (r *DockerImageRef) ImageString() string {
-	return r.Registry + "/" + r.Image + ":" + r.Tag
+func (r *DockerImageRef) WithTag() string {
+	return r.WithoutTag() + ":" + r.Tag
 }
 
-func (r *DockerImageRef) ImageStringNoTag() string {
-	return r.Registry + "/" + r.Image
+func (r *DockerImageRef) WithoutTag() string {
+	tmp := ""
+	if r.Registry != "" {
+		tmp += r.Registry + "/"
+	}
+	return tmp + r.Image
 }
 
 func parseImageRepo(repo string) *DockerImageRef {
@@ -47,14 +55,15 @@ func parseImageRepo(repo string) *DockerImageRef {
 	tmp := strings.Split(repo, "/")
 	if len(tmp) > 1 && strings.IndexByte(tmp[0], '.') != -1 {
 		result.Registry = tmp[0]
+		tmp = tmp[1:]
 	}
 	lastElem := tmp[len(tmp)-1]
 	colonIndex := strings.IndexByte(lastElem, ':')
 	if colonIndex != -1 {
-		lastImage := lastElem[0:colonIndex]
-		result.Image = strings.Join(tmp[1:len(tmp)-2], "/") + "/" + lastImage
-		result.Tag = lastElem[colonIndex+1 : len(lastElem)-1]
+		result.Tag = lastElem[colonIndex+1:]
+		tmp[len(tmp)-1] = lastElem[0:colonIndex]
 	}
+	result.Image = strings.Join(tmp, "/")
 	if result.Registry == "" {
 		result.Registry = DefaultDockerRegistry
 	}
@@ -67,7 +76,7 @@ type timestampedImageTag struct {
 }
 
 func GetTagsForGcrImage(repo *DockerImageRef) ([]timestampedImageTag, error) {
-	fullRepo := repo.ImageStringNoTag()
+	fullRepo := repo.WithoutTag()
 	tmp := strings.Split(repo.Image, "/")
 	gcpProject := tmp[0]
 	output, err := runner.Run("gcloud", "container", "images", "list-tags", fullRepo, "--project", gcpProject, "--format", "json")
@@ -76,16 +85,16 @@ func GetTagsForGcrImage(repo *DockerImageRef) ([]timestampedImageTag, error) {
 	}
 	result := make([]timestampedImageTag, 0)
 	type gcrTimestamp struct {
-		Year int `json:"year"`
-		Month int `json:"month"`
-		Day int `json:"day"`
-		Hour int `json:"hour"`
+		Year   int `json:"year"`
+		Month  int `json:"month"`
+		Day    int `json:"day"`
+		Hour   int `json:"hour"`
 		Minute int `json:"minute"`
 		Second int `json:"second"`
 	}
 	type gcrImageTag struct {
-		Digest string `json:"digest"`
-		Tags []string `json:"tags"`
+		Digest    string       `json:"digest"`
+		Tags      []string     `json:"tags"`
 		Timestamp gcrTimestamp `json:"timestamp"`
 	}
 	var imageTagList []gcrImageTag
@@ -115,12 +124,12 @@ func GetTagsForDockerV2RegistryImage(repo *DockerImageRef) ([]timestampedImageTa
 	}
 	tags, err := registry.Tags(repo.Image)
 	if err != nil {
-		return nil, fmt.Errorf(`could not list tags for %s: %v`, repo.ImageStringNoTag(), err)
+		return nil, fmt.Errorf(`could not list tags for %s: %v`, repo.WithoutTag(), err)
 	}
 	for _, tag := range tags {
 		manifest, err := registry.Manifest(repo.Image, tag)
 		if err != nil {
-			return nil, fmt.Errorf(`could not get manifest for %s:%s: %v`, repo.ImageStringNoTag(), tag, err)
+			return nil, fmt.Errorf(`could not get manifest for %s:%s: %v`, repo.WithoutTag(), tag, err)
 		}
 		type v1Compat struct {
 			Created string `json:"created"`
@@ -128,12 +137,12 @@ func GetTagsForDockerV2RegistryImage(repo *DockerImageRef) ([]timestampedImageTa
 		if len(manifest.History) > 0 {
 			var v1Compat v1Compat
 			if err = json.Unmarshal([]byte(manifest.History[0].V1Compatibility), &v1Compat); err != nil {
-				return nil, fmt.Errorf(`could not decode tag timestamp for %s:%s: %v`, repo.ImageStringNoTag(), tag, err)
+				return nil, fmt.Errorf(`could not decode tag timestamp for %s:%s: %v`, repo.WithoutTag(), tag, err)
 			}
 			//timestamp, err := time.Parse("2006-01-02T15:04:05.999999999Z", v1Compat.Created)
 			timestamp, err := parseDockerTimestamp(v1Compat.Created)
 			if err != nil {
-				return nil, fmt.Errorf(`could not parse timestamp for %s:%s: %v`, repo.ImageStringNoTag(), tag, err)
+				return nil, fmt.Errorf(`could not parse timestamp for %s:%s: %v`, repo.WithoutTag(), tag, err)
 			}
 			result = append(result, timestampedImageTag{Tag: tag, Timestamp: timestamp})
 		}
@@ -200,56 +209,117 @@ type ChartUpdate struct {
 	Reason     string
 }
 
-func ReleaseWantsTagUpdate(release *model.Release, newTag string, env *model.Environment) ([]ImageUpdate, error) {
+func ReleaseWantsImageUpdate(release *model.Release, newImage *DockerImageRef) ([]ImageUpdate, error) {
 	updates := make([]ImageUpdate, 0)
 	for _, trigger := range release.Triggers {
-		if trigger.Image == nil || trigger.Image.TagValue == "" {
+		if trigger.Image == nil {
+			//fmt.Printf("no image trigger: release %q", release.Name)
 			continue
 		}
-		values, err := helm.GetResolvedValues(release, env, true)
+		values, err := helm.GetResolvedValues(release)
 		if err != nil {
 			return nil, err
 		}
-		tagValue := trigger.Image.TagValue
-		currentTag := helm.LookupValueByString(tagValue, values).(string)
-		// If the current version is not semver, consider any value to be an update
-		if !semver.IsSemver(currentTag) {
+		imageRepo := helm.GetImageRepoFromImageTrigger(trigger.Image, values)
+		if imageRepo != newImage.WithoutTag() {
+			//fmt.Printf("imageRepo != newImage: %q != %q", imageRepo, newImage.WithoutTag())
+			continue
+		}
+		tagValue := trigger.Image.TagValueString()
+		currentTag := helm.LookupValueByString(tagValue, values).(*string)
+		if currentTag == nil {
+			continue
+		}
+		// If the current version is not semver, or track is "Newest", blindly treat any value as an update
+		if !semver.IsSemver(*currentTag) || trigger.Image.Track == semver.TrackNewest {
+			reason := `track=Newest, any observed tag considered newer`
+			if trigger.Image.Track != semver.TrackNewest {
+				reason = fmt.Sprintf(`current tag %q not semver, any observed tag considered newer`, *currentTag)
+			}
 			updates = append(updates, ImageUpdate{
-				NewTag:   newTag,
-				TagValue: tagValue,
-				Release:  release,
-				Reason:   fmt.Sprintf(`current tag %q not semver, any observed tag considered newer`, currentTag),
+				ImageRepo: imageRepo,
+				NewTag:    newImage.Tag,
+				TagValue:  tagValue,
+				Release:   release,
+				Reason:    reason,
 			})
 			continue
 		}
-		// Consider any new version an update if track == Newest
-		if trigger.Image.Track != semver.TrackNewest {
-			updates = append(updates, ImageUpdate{
-				NewTag:   newTag,
-				TagValue: tagValue,
-				Release:  release,
-				Reason:   `track=Newest, any observed tag considered newer`,
-			})
-			continue
-		}
-		parsedCurrentTag, err := semver.Parse(currentTag)
+		parsedCurrentTag, err := semver.Parse(*currentTag)
 		if err != nil {
-			return nil, fmt.Errorf(`failed parsing current tag %q: %v`, currentTag, err)
+			return nil, fmt.Errorf(`release %q: failed parsing current tag %q: %v`, release.Name, *currentTag, err)
 		}
-		parsedNewTag, err := semver.Parse(newTag)
+		parsedNewTag, err := semver.Parse(newImage.Tag)
 		if err != nil {
-			return nil, fmt.Errorf(`failed parsing new tag %q: %v`, newTag, err)
+			return nil, fmt.Errorf(`release %q: failed parsing new tag %q: %v`, release.Name, newImage.Tag, err)
 		}
 		if semver.IsWantedUpgrade(parsedCurrentTag, parsedNewTag, trigger.Image.Track) {
 			updates = append(updates, ImageUpdate{
-				NewTag:   newTag,
-				TagValue: tagValue,
-				Release:  release,
+				ImageRepo: imageRepo,
+				NewTag:    newImage.Tag,
+				TagValue:  tagValue,
+				Release:   release,
+				Reason:    fmt.Sprintf(`with track=%q, %q > %q`, trigger.Image.Track, newImage.Tag, *currentTag),
 			})
 		}
 	}
 	return updates, nil
 }
+
+//func ReleaseWantsTagUpdate(release *model.Release, newTag string) ([]ImageUpdate, error) {
+//	updates := make([]ImageUpdate, 0)
+//	for _, trigger := range release.Triggers {
+//		if trigger.Image == nil {
+//			continue
+//		}
+//		values, err := helm.GetResolvedValues(release)
+//		if err != nil {
+//			return nil, err
+//		}
+//		tagValue := trigger.Image.TagValueString()
+//		currentTag := helm.LookupValueByString(tagValue, values).(*string)
+//		imageRepo := helm.GetImageRepoFromImageTrigger(trigger.Image, values)
+//		// If the current version is not semver, consider any value to be an update
+//		if !semver.IsSemver(*currentTag) {
+//			updates = append(updates, ImageUpdate{
+//				ImageRepo: imageRepo,
+//				NewTag:    newTag,
+//				TagValue:  tagValue,
+//				Release:   release,
+//				Reason:    fmt.Sprintf(`current tag %q not semver, any observed tag considered newer`, *currentTag),
+//			})
+//			continue
+//		}
+//		// Consider any new version an update if track == Newest
+//		if trigger.Image.Track != semver.TrackNewest {
+//			updates = append(updates, ImageUpdate{
+//				ImageRepo: imageRepo,
+//				NewTag:    newTag,
+//				TagValue:  tagValue,
+//				Release:   release,
+//				Reason:    `track=Newest, any observed tag considered newer`,
+//			})
+//			continue
+//		}
+//		parsedCurrentTag, err := semver.Parse(*currentTag)
+//		if err != nil {
+//			return nil, fmt.Errorf(`failed parsing current tag %q: %v`, *currentTag, err)
+//		}
+//		parsedNewTag, err := semver.Parse(newTag)
+//		if err != nil {
+//			return nil, fmt.Errorf(`failed parsing new tag %q: %v`, newTag, err)
+//		}
+//		if semver.IsWantedUpgrade(parsedCurrentTag, parsedNewTag, trigger.Image.Track) {
+//			updates = append(updates, ImageUpdate{
+//				ImageRepo: imageRepo,
+//				NewTag:    newTag,
+//				TagValue:  tagValue,
+//				Release:   release,
+//			})
+//		}
+//	}
+//	return updates, nil
+//}
 
 func ReleaseWantsChartUpdate(release *model.Release, newVersion string, env *model.Environment) ([]ChartUpdate, error) {
 	newSemver, err := semver.Parse(newVersion)
@@ -280,7 +350,7 @@ func ReleaseWantsChartUpdate(release *model.Release, newVersion string, env *mod
 	return updates, nil
 }
 
-func FindImageUpdatesForRelease(release *model.Release, env *model.Environment) (map[string][]ImageUpdate, error) {
+func FindImageUpdatesForRelease(release *model.Release) (map[string][]ImageUpdate, error) {
 	updates := make(map[string][]ImageUpdate, 0)
 	if release.Triggers == nil {
 		return updates, nil
@@ -289,10 +359,10 @@ func FindImageUpdatesForRelease(release *model.Release, env *model.Environment) 
 		if trigger.Image == nil || trigger.Image.Track == "" {
 			continue
 		}
-		tagValue := trigger.Image.TagValue
-		repoValue := trigger.Image.RepoValue
-		prefixValue := trigger.Image.RepoPrefixValue
-		values, err := helm.GetResolvedValues(release, env, true)
+		tagValue := trigger.Image.TagValueString()
+		repoValue := trigger.Image.RepoValueString()
+		prefixValue := trigger.Image.RepoPrefixValueString()
+		values, err := helm.GetResolvedValues(release)
 		if err != nil {
 			return nil, fmt.Errorf(`while looking for updates for release %q: %v`, release.Name, err)
 		}
@@ -317,7 +387,7 @@ func FindImageUpdatesForRelease(release *model.Release, env *model.Environment) 
 			if updatedTag != "" {
 				relFile := release.FromFile
 				if _, found := updates[relFile]; !found {
-					updates[relFile] = make([]ImageUpdate, 1)
+					updates[relFile] = make([]ImageUpdate, 0)
 				}
 				updates[relFile] = append(updates[relFile], ImageUpdate{
 					OldTag:    imageTag,
@@ -332,16 +402,16 @@ func FindImageUpdatesForRelease(release *model.Release, env *model.Environment) 
 	return updates, nil
 }
 
-func FindImageUpdatesForReleases(releases []*model.Release, env *model.Environment) (map[string][]ImageUpdate, error) {
+func FindImageUpdatesForReleases(releases []*model.Release) (map[string][]ImageUpdate, error) {
 	envUpdates := make(map[string][]ImageUpdate, 0)
 	for _, release := range releases {
-		imageUpdates, err := FindImageUpdatesForRelease(release, env)
+		imageUpdates, err := FindImageUpdatesForRelease(release)
 		if err != nil {
-			return nil, fmt.Errorf(`while looking for updates for release %q in env %q: %v`, release.Name, env.Name, err)
+			return nil, fmt.Errorf(`while looking for updates for release %q in env %q: %v`, release.Name, release.Environment.Name, err)
 		}
 		for file, updates := range imageUpdates {
 			if _, found := envUpdates[file]; !found {
-				envUpdates[file] = make([]ImageUpdate, 1)
+				envUpdates[file] = make([]ImageUpdate, 0)
 			}
 			for _, update := range updates {
 				envUpdates[file] = append(envUpdates[file], update)
@@ -352,5 +422,5 @@ func FindImageUpdatesForReleases(releases []*model.Release, env *model.Environme
 }
 
 func FindImageUpdatesForEnv(env *model.Environment) (map[string][]ImageUpdate, error) {
-	return FindImageUpdatesForReleases(env.AllReleases(), env)
+	return FindImageUpdatesForReleases(env.AllReleases())
 }

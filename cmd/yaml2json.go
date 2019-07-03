@@ -16,23 +16,36 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
+	"encoding/json"
+	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"io/ioutil"
+	"os"
 )
 
 // yaml2jsonCmd represents the yaml2json command
 var yaml2jsonCmd = &cobra.Command{
 	Use:   "yaml2json",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("yaml2json called")
+	Short: "YAML to JSON conversion utility (stdin/stdout)",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		var rawObject interface{}
+		data, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			return errors.Wrap(err, `reading stdin`)
+		}
+		err = yaml.Unmarshal(data, &rawObject)
+		if err != nil {
+			return errors.Wrap(err, `decoding JSON`)
+		}
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		encoder.SetEscapeHTML(false)
+		if err = encoder.Encode(&rawObject); err != nil {
+			return errors.Wrap(err, `encoding YAML`)
+		}
+		return nil
 	},
 }
 

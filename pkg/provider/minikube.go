@@ -4,7 +4,7 @@ import (
 	"github.com/zedge/kubecd/pkg/model"
 )
 
-type MinikubeClusterProvider struct { baseClusterProvider }
+type MinikubeClusterProvider struct{ baseClusterProvider }
 
 var _ ClusterProvider = &MinikubeClusterProvider{}
 

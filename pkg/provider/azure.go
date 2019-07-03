@@ -4,7 +4,7 @@ import (
 	"github.com/zedge/kubecd/pkg/model"
 )
 
-type AksClusterProvider struct { baseClusterProvider }
+type AksClusterProvider struct{ baseClusterProvider }
 
 var _ ClusterProvider = &AksClusterProvider{}
 

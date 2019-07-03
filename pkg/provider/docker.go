@@ -4,7 +4,7 @@ import (
 	"github.com/zedge/kubecd/pkg/model"
 )
 
-type DockerForDesktopClusterProvider struct { baseClusterProvider }
+type DockerForDesktopClusterProvider struct{ baseClusterProvider }
 
 var _ ClusterProvider = &DockerForDesktopClusterProvider{}
 

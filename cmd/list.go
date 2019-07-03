@@ -23,10 +23,10 @@ import (
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
-	Use:   "list {env,release,cluster}",
-	Short: "list clusters, environments or releases",
-	Long: ``,
-	Args: matchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+	Use:       "list {env,release,cluster}",
+	Short:     "list clusters, environments or releases",
+	Long:      ``,
+	Args:      matchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: []string{"env", "envs", "release", "releases", "cluster", "clusters"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
@@ -51,17 +51,6 @@ var listCmd = &cobra.Command{
 		}
 		return nil
 	},
-}
-
-func matchAll(checks ...cobra.PositionalArgs) cobra.PositionalArgs {
-	return func(cmd *cobra.Command, args []string) error {
-		for _, check := range checks {
-			if err := check(cmd, args); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
 }
 
 func init() {

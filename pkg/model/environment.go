@@ -42,13 +42,11 @@ func NewEnvironment(reader io.Reader, envFile string) (*Environment, error) {
 
 func (e *Environment) populateReleases() error {
 	for _, releaseListFile := range e.ReleasesFiles {
-		releaseList, err := NewReleaseListFromFile(ResolvePathFromFile(releaseListFile, e.fromFile))
+		releaseList, err := NewReleaseListFromFile(e, ResolvePathFromFile(releaseListFile, e.fromFile))
 		if err != nil {
 			return fmt.Errorf(`environment %q: %v`, e.Name, err)
 		}
-		for _, rel := range releaseList.Releases {
-			e.Releases = append(e.Releases, rel)
-		}
+		e.Releases = append(e.Releases, releaseList.Releases...)
 	}
 
 	return nil

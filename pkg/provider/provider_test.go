@@ -8,8 +8,8 @@ import (
 
 func TestGetClusterProvider(t *testing.T) {
 	type testCase struct {
-		name string
-		cluster *model.Cluster
+		name                 string
+		cluster              *model.Cluster
 		expectedProviderType interface{}
 	}
 	for _, tc := range []testCase{

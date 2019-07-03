@@ -91,6 +91,14 @@ func (k *KubeCDConfig) AllClusters() []*Cluster {
 	return k.Clusters
 }
 
+func (k *KubeCDConfig) AllReleases() []*Release {
+	result := make([]*Release, 0)
+	for _, env := range k.Environments {
+		result = append(result, env.Releases...)
+	}
+	return result
+}
+
 func (k *KubeCDConfig) GetCluster(name string) *Cluster {
 	for _, cluster := range k.Clusters {
 		if cluster.Name == name {

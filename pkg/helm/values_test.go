@@ -148,3 +148,15 @@ func TestGenerateHelmApplyArgv(t *testing.T) {
 			cmds)
 	})
 }
+
+func TestGetImageRepoFromImageTrigger(t *testing.T) {
+	trigger := &model.ImageTrigger{}
+	valuesWithoutPrefix := map[string]interface{}{
+		"image": map[string]interface{}{"repository": "test-image"},
+	}
+	valuesWithPrefix := map[string]interface{}{
+		"image": map[string]interface{}{"prefix": "example.io/", "repository": "test-image"},
+	}
+	assert.Equal(t, "test-image", GetImageRepoFromImageTrigger(trigger, valuesWithoutPrefix))
+	assert.Equal(t, "example.io/test-image", GetImageRepoFromImageTrigger(trigger, valuesWithPrefix))
+}

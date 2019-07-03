@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,7 +20,8 @@ type Release struct {
 	SkipDefaultValues bool                   `json:"skipDefaultValues,omitempty"`
 	ResourceFiles     []string               `json:"resourceFiles,omitempty"`
 
-	FromFile string `json:"-"`
+	FromFile    string       `json:"-"`
+	Environment *Environment `json:"-"`
 }
 
 type ReleaseList struct {
@@ -45,15 +47,15 @@ type ReleaseList struct {
 //	return release, nil
 //}
 
-func NewReleaseListFromFile(fromFile string) (*ReleaseList, error) {
+func NewReleaseListFromFile(env *Environment, fromFile string) (*ReleaseList, error) {
 	r, err := os.Open(fromFile)
 	if err != nil {
 		return nil, fmt.Errorf("error while opening %s: %v", fromFile, err)
 	}
-	return NewReleaseList(r, fromFile)
+	return NewReleaseList(env, r, fromFile)
 }
 
-func NewReleaseList(reader io.Reader, fromFile string) (*ReleaseList, error) {
+func NewReleaseList(env *Environment, reader io.Reader, fromFile string) (*ReleaseList, error) {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("error while reading %s: %v", fromFile, err)
@@ -65,6 +67,7 @@ func NewReleaseList(reader io.Reader, fromFile string) (*ReleaseList, error) {
 	}
 	for _, release := range releaseList.Releases {
 		release.FromFile = fromFile
+		release.Environment = env
 	}
 	return releaseList, nil
 }
@@ -97,4 +100,16 @@ func (l *ReleaseList) sanityCheck() []error {
 		}
 	}
 	return issues
+}
+
+func (r *Release) UnmarshalJSON(data []byte) error {
+	type release Release
+	if err := json.Unmarshal(data, (*release)(r)); err != nil {
+		return err
+	}
+	if r.Trigger != nil {
+		r.Triggers = append(r.Triggers, *r.Trigger)
+		r.Trigger = nil
+	}
+	return nil
 }

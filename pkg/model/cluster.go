@@ -69,4 +69,3 @@ func (p *GkeProvider) sanityCheck() []error {
 	}
 	return issues
 }
-

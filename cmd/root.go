@@ -17,8 +17,12 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/mitchellh/colorstring"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -27,8 +31,6 @@ import (
 var cfgFile string
 
 var environmentsFile string
-var dryRun bool
-var debug bool
 var verbosity int
 var showVersion bool
 
@@ -36,7 +38,7 @@ var showVersion bool
 var rootCmd = &cobra.Command{
 	Use:   "kcd",
 	Short: "kcd is the command line interface for KubeCD",
-	Long: ``,
+	Long:  ``,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -96,4 +98,19 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+func runCommand(dryRun bool, argv []string) error {
+	printCmd := strings.Join(argv, " ")
+	_, _ = colorstring.Printf("[yellow]%s\n", printCmd)
+	if !dryRun {
+		cmd := exec.Command(argv[0], argv[1:]...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			return errors.Wrapf(err, "command failed: %q", printCmd)
+		}
+	}
+	return nil
 }

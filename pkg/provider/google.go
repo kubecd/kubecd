@@ -5,7 +5,7 @@ import (
 	"github.com/zedge/kubecd/pkg/model"
 )
 
-type GkeClusterProvider struct { baseClusterProvider }
+type GkeClusterProvider struct{ baseClusterProvider }
 
 var _ ClusterProvider = &GkeClusterProvider{}
 

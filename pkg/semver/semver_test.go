@@ -49,15 +49,15 @@ func TestBestUpgrade(t *testing.T) {
 
 func TestIsWantedUpgrade(t *testing.T) {
 	type testCase struct {
-		current string
+		current   string
 		candidate string
-		track string
-		isWanted bool
+		track     string
+		isWanted  bool
 	}
 	for i, tc := range []testCase{
 		{"1.0", "0.9", TrackMajorVersion, false},
 		{"1.0", "1.1", TrackMinorVersion, true},
-		{"1.0", "1.0", TrackMinorVersion, true},
+		{"1.0", "1.0", TrackMinorVersion, false},
 		{"1.0", "1.0", "UnknownTrack", false},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
