@@ -1,8 +1,8 @@
 package model
 
 import (
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 )
 
 type ClusterParameter struct {
