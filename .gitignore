@@ -13,3 +13,6 @@ __pycache__
 .vscode
 /bin
 /kcd
+/kcd-linux*
+/kcd-darwin*
+
