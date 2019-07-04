@@ -13,42 +13,41 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package main
 
 import (
-	"encoding/json"
-	"github.com/pkg/errors"
+	"fmt"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
-	"io/ioutil"
-	"os"
+	"github.com/zedge/kubecd/pkg/helm"
+	"github.com/zedge/kubecd/pkg/model"
 )
 
-// json2yamlCmd represents the json2yaml command
-var json2yamlCmd = &cobra.Command{
-	Use:   "json2yaml",
-	Short: "JSON to YAML conversion utility (stdin/stdout)",
+var useDryRun bool
+
+// useCmd represents the use command
+var useCmd = &cobra.Command{
+	Use:   "use {ENV}",
+	Short: "switch kube context to the specified environment",
 	Long: ``,
-	Args: cobra.NoArgs,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var rawObject interface{}
-		data, err := ioutil.ReadAll(os.Stdin)
+		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
 		if err != nil {
-			return errors.Wrap(err, `reading stdin`)
+			return err
 		}
-		err = json.Unmarshal(data, &rawObject)
-		if err != nil {
-			return errors.Wrap(err, `decoding JSON`)
+		env := kcdConfig.GetEnvironment(args[0])
+		if env == nil {
+			return fmt.Errorf(`unknown environment %q`, args[0])
 		}
-		encoder := yaml.NewEncoder(os.Stdout)
-		encoder.SetIndent(2)
-		if err = encoder.Encode(&rawObject); err != nil {
-			return errors.Wrap(err, `encoding YAML`)
+		argv := helm.UseContextCommand(env.Name)
+		if err = runCommand(useDryRun, argv); err != nil {
+			return err
 		}
 		return nil
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(json2yamlCmd)
+	rootCmd.AddCommand(useCmd)
+	useCmd.Flags().BoolVarP(&useDryRun, "dry-run", "n", false, "print commands instead of running them")
 }

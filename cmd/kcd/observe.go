@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package main
 
 import (
 	"fmt"
@@ -34,8 +34,8 @@ var observePatch bool
 var observeCmd = &cobra.Command{
 	Use:   "observe",
 	Short: "observe a new version of an image or chart",
-	Long: ``,
-	Args: matchAll(cobra.RangeArgs(0, 1), imageOrChart(&observeImage, &observeChart)),
+	Long:  ``,
+	Args:  matchAll(cobra.RangeArgs(0, 1), imageOrChart(&observeImage, &observeChart)),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
 		if err != nil {

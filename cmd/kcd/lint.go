@@ -13,17 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package main
 
 import (
 	"github.com/pkg/errors"
-
 	"github.com/spf13/cobra"
 )
 
-// pollCmd represents the poll command
-var pollCmd = &cobra.Command{
-	Use:   "poll",
+// lintCmd represents the lint command
+var lintCmd = &cobra.Command{
+	Use:   "lint",
 	Short: "[not yet implemented]",
 	Long: ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -32,15 +31,15 @@ var pollCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(pollCmd)
+	rootCmd.AddCommand(lintCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// pollCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// lintCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// pollCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// lintCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
