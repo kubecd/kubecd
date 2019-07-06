@@ -188,7 +188,7 @@ func FindImageUpdatesForRelease(release *model.Release, tagIndex TagIndex) ([]Im
 		}
 		imageTags := tagIndex.GetTags(imageRef)
 		if imageTags == nil {
-			fmt.Printf("env:%s release:%s imageTags == nil, tagIndex=%#v, imageRef=%#v\n", release.Environment.Name, release.Name, tagIndex, *imageRef)
+			//fmt.Printf("env:%s release:%s imageTags == nil, tagIndex=%#v, imageRef=%#v\n", release.Environment.Name, release.Name, tagIndex, *imageRef)
 			continue
 		}
 		var currentTag image.TimestampedTag

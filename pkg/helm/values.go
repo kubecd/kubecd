@@ -370,7 +370,6 @@ func GetResolvedValues(release *model.Release) (map[string]interface{}, error) {
 		if pathExists(valuesFile) {
 			chartValues, err := LoadValuesFile(valuesFile)
 			if err != nil {
-				panic(err)
 				return nil, fmt.Errorf(`failed to load values file %q for chart dir %q: %v`, valuesFile, *release.Chart.Dir, err)
 			}
 			values = MergeValues(chartValues, values)

@@ -26,10 +26,13 @@ import (
 	"io/ioutil"
 )
 
-var observeImage string
-var observeChart string
-var observePatch bool
-var observeVerify bool
+var (
+	observePatch    bool
+	observeReleases []string
+	observeImage    string
+	observeChart    string
+	observeVerify   bool
+)
 
 // observeCmd represents the observe command
 var observeCmd = &cobra.Command{
@@ -52,6 +55,7 @@ var observeCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(observeCmd)
 	observeCmd.Flags().StringVarP(&observeImage, "image", "i", "", "a new image, including tag")
+	observeCmd.Flags().StringSliceVarP(&observeReleases, "releases", "r", []string{}, "limit the update to or more specific releases")
 	observeCmd.Flags().StringVar(&observeChart, "chart", "", "a new chart version")
 	observeCmd.Flags().BoolVar(&observePatch, "patch", false, "patch release files with updated tags")
 	observeCmd.Flags().BoolVar(&observeVerify, "verify", false, "verify that image:tag exists")
@@ -104,11 +108,14 @@ func observeImageTag(kcdConfig *model.KubeCDConfig, cmd *cobra.Command, args []s
 
 func makeObserveReleaseFilters(args []string) []kubecd.ReleaseFilterFunc {
 	filters := make([]kubecd.ReleaseFilterFunc, 0)
-	if observeImage != "" {
-		filters = append(filters, kubecd.ImageReleaseFilter(observeImage))
+	if len(observeReleases) > 0 {
+		filters = append(filters, kubecd.ReleaseFilter(observeReleases))
 	}
 	if len(args) == 1 {
 		filters = append(filters, kubecd.EnvironmentReleaseFilter(args[0]))
+	}
+	if observeImage != "" {
+		filters = append(filters, kubecd.ImageReleaseFilter(observeImage))
 	}
 	return filters
 }
@@ -258,4 +265,3 @@ func imageOrChart(image, chart *string) cobra.PositionalArgs {
 		return nil
 	}
 }
-
