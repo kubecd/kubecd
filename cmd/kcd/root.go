@@ -34,6 +34,12 @@ var environmentsFile string
 var verbosity int
 var showVersion bool
 
+type NotYetImplementedError string
+
+func (e NotYetImplementedError) Error() string {
+	return "not yet implemented: " + string(e)
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "kcd",

@@ -35,16 +35,16 @@ var indentCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, file := range args {
-			var rawObject yaml.Node
+			var doc yaml.Node
 			data, err := ioutil.ReadFile(file)
 			if err != nil {
 				return errors.Wrapf(err, `error reading %q`, file)
 			}
-			err = yaml.Unmarshal(data, &rawObject)
+			err = yaml.Unmarshal(data, &doc)
 			if err != nil {
 				return errors.Wrapf(err, `error decoding yaml in %q`, file)
 			}
-			if err = writeIndentedYamlToFile(file, rawObject); err != nil {
+			if err = writeIndentedYamlToFile(file, &doc); err != nil {
 				return err
 			}
 		}
@@ -56,7 +56,7 @@ func init() {
 	rootCmd.AddCommand(indentCmd)
 }
 
-func writeIndentedYamlToFile(fileName string, v interface{}) error {
+func writeIndentedYamlToFile(fileName string, v *yaml.Node) error {
 	tmpFile, err := ioutil.TempFile(path.Dir(fileName), path.Base(fileName)+"*")
 	if err != nil {
 		return errors.Wrapf(err, `error creating tmpfile for %q`, fileName)
@@ -65,7 +65,7 @@ func writeIndentedYamlToFile(fileName string, v interface{}) error {
 	defer func() { _ = os.Remove(tmpFile.Name()) }()
 	encoder := yaml.NewEncoder(tmpFile)
 	encoder.SetIndent(indentLevel)
-	if err = encoder.Encode(&v); err != nil {
+	if err = encoder.Encode(v); err != nil {
 		return errors.Wrapf(err, `error re-encoding `)
 	}
 	if err = os.Rename(tmpFile.Name(), fileName); err != nil {

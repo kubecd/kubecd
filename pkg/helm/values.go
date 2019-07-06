@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"github.com/ghodss/yaml"
+	"github.com/zedge/kubecd/pkg/image"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -409,15 +410,30 @@ func GetResolvedValues(release *model.Release) (map[string]interface{}, error) {
 	return values, nil
 }
 
-func GetImageRepoFromImageTrigger(trigger *model.ImageTrigger, values map[string]interface{}) string {
+func GetImageRefFromImageTrigger(trigger *model.ImageTrigger, values map[string]interface{}) *image.DockerImageRef {
 	repoValue := trigger.RepoValueString()
 	repo := LookupValueByString(repoValue, values).(*string)
 	if repo == nil {
-		return ""
+		return nil
 	}
 	prefix := LookupValueByString(trigger.RepoPrefixValueString(), values).(*string)
 	if prefix != nil {
 		*repo = *prefix + *repo
 	}
-	return *repo
+	tag := LookupValueByString(trigger.TagValueString(), values).(*string)
+	if tag != nil {
+		*repo = *repo + ":" + *tag
+	}
+	return image.NewDockerImageRef(*repo)
+}
+
+func GetImageRefsFromRelease(release *model.Release, values map[string]interface{}) []*image.DockerImageRef {
+	result := make([]*image.DockerImageRef, 0)
+	for _, trigger := range release.Triggers {
+		if trigger.Image == nil {
+			continue
+		}
+		result = append(result, GetImageRefFromImageTrigger(trigger.Image, values))
+	}
+	return result
 }

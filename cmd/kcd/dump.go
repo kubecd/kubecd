@@ -16,7 +16,6 @@ limitations under the License.
 package main
 
 import (
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +23,9 @@ import (
 var dumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "[not yet implemented]",
-	Long: ``,
+	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.New("command not yet implemented")
+		return NotYetImplementedError("dump")
 	},
 }
 

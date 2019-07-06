@@ -28,8 +28,8 @@ var useDryRun bool
 var useCmd = &cobra.Command{
 	Use:   "use {ENV}",
 	Short: "switch kube context to the specified environment",
-	Long: ``,
-	Args: cobra.ExactArgs(1),
+	Long:  ``,
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
 		if err != nil {

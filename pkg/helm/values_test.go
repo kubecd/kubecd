@@ -3,6 +3,7 @@ package helm
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/zedge/kubecd/pkg/exec"
+	"github.com/zedge/kubecd/pkg/image"
 	"github.com/zedge/kubecd/pkg/model"
 	"github.com/zedge/kubecd/pkg/semver"
 	"testing"
@@ -157,6 +158,6 @@ func TestGetImageRepoFromImageTrigger(t *testing.T) {
 	valuesWithPrefix := map[string]interface{}{
 		"image": map[string]interface{}{"prefix": "example.io/", "repository": "test-image"},
 	}
-	assert.Equal(t, "test-image", GetImageRepoFromImageTrigger(trigger, valuesWithoutPrefix))
-	assert.Equal(t, "example.io/test-image", GetImageRepoFromImageTrigger(trigger, valuesWithPrefix))
+	assert.Equal(t, image.DefaultDockerRegistry + "/test-image", GetImageRefFromImageTrigger(trigger, valuesWithoutPrefix).WithoutTag())
+	assert.Equal(t, "example.io/test-image", GetImageRefFromImageTrigger(trigger, valuesWithPrefix).WithoutTag())
 }

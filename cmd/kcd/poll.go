@@ -16,31 +16,82 @@ limitations under the License.
 package main
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+	"github.com/zedge/kubecd/pkg/kubecd"
+	"github.com/zedge/kubecd/pkg/model"
 
 	"github.com/spf13/cobra"
+)
+
+var (
+	pollPatch    bool
+	pollReleases []string
+	pollImage    string
+	pollCluster  string
 )
 
 // pollCmd represents the poll command
 var pollCmd = &cobra.Command{
 	Use:   "poll",
-	Short: "[not yet implemented]",
-	Long: ``,
+	Short: "poll for new images in registries",
+	Long:  ``,
+	Args:  matchAll(cobra.RangeArgs(0, 1), clusterFlagOrEnvArg(&pollCluster)),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.New("command not yet implemented")
+		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
+		if err != nil {
+			return err
+		}
+		releaseFilters := makePollReleaseFilters(cmd, args)
+		imageIndex, err := kubecd.ImageReleaseIndex(kcdConfig, releaseFilters...)
+		if err != nil {
+			return err
+		}
+		imageTags, err := kubecd.BuildTagIndexFromDockerRegistries(imageIndex)
+		if err != nil {
+			return err
+		}
+		allUpdates := make([]kubecd.ImageUpdate, 0)
+		for repo, releases := range imageIndex {
+			fmt.Printf("image: %s\n", repo)
+			for _, release := range releases {
+				imageUpdates, err := kubecd.FindImageUpdatesForRelease(release, imageTags)
+				if err != nil {
+					return err
+				}
+				allUpdates = append(allUpdates, imageUpdates...)
+			}
+		}
+		if len(allUpdates) == 0 {
+			fmt.Println("No updates found.")
+			return nil
+		}
+		if err = patchReleasesFilesMaybe(allUpdates, pollPatch); err != nil {
+			return err
+		}
+		return nil
 	},
+}
+
+func makePollReleaseFilters(cmd *cobra.Command, args []string) []kubecd.ReleaseFilterFunc {
+	filters := make([]kubecd.ReleaseFilterFunc, 0)
+	if pollCluster != "" {
+		filters = append(filters, kubecd.ClusterReleaseFilter(pollCluster))
+	} else {
+		filters = append(filters, kubecd.EnvironmentReleaseFilter(args[0]))
+	}
+	if len(pollReleases) > 0 {
+		filters = append(filters, kubecd.ReleaseFilter(pollReleases))
+	}
+	if pollImage != "" {
+		filters = append(filters, kubecd.ImageReleaseFilter(pollImage))
+	}
+	return filters
 }
 
 func init() {
 	rootCmd.AddCommand(pollCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// pollCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// pollCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	pollCmd.Flags().BoolVarP(&pollPatch, "patch", "p", false, "patch releases.yaml files with updated version")
+	pollCmd.Flags().StringSliceVarP(&pollReleases, "releases", "r", []string{}, "poll one or more specific releases")
+	pollCmd.Flags().StringVarP(&pollImage, "image", "i", "", "poll releases using this image")
+	pollCmd.Flags().StringVarP(&pollCluster, "cluster", "c", "", "poll all releases in this cluster")
 }

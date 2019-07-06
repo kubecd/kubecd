@@ -28,8 +28,8 @@ import (
 var json2yamlCmd = &cobra.Command{
 	Use:   "json2yaml",
 	Short: "JSON to YAML conversion utility (stdin/stdout)",
-	Long: ``,
-	Args: cobra.NoArgs,
+	Long:  ``,
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var rawObject interface{}
 		data, err := ioutil.ReadAll(os.Stdin)

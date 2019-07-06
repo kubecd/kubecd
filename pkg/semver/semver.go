@@ -34,9 +34,11 @@ func BestUpgrade(current *mmsemver.Version, candidates []*mmsemver.Version, trac
 	var err error
 	switch track {
 	case TrackPatchLevel:
-		spec, err = mmsemver.NewConstraint("~" + current.String() + ", >" + current.String())
+		nextMinor := (*current).IncMinor()
+		spec, err = mmsemver.NewConstraint(">" + current.String() + ", <" + nextMinor.String())
 	case TrackMinorVersion:
-		spec, err = mmsemver.NewConstraint("^" + current.String() + ", >" + current.String())
+		nextMajor := (*current).IncMajor()
+		spec, err = mmsemver.NewConstraint(">" + current.String() + ", <" + nextMajor.String())
 	case TrackMajorVersion:
 		spec, err = mmsemver.NewConstraint(">" + current.String())
 	default:

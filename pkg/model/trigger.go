@@ -1,8 +1,8 @@
 package model
 
 const (
-	DefaultTagValue = "image.tag"
-	DefaultRepoValue = "image.repository"
+	DefaultTagValue        = "image.tag"
+	DefaultRepoValue       = "image.repository"
 	DefaultRepoPrefixValue = "image.prefix"
 )
 
@@ -10,7 +10,7 @@ type ImageTrigger struct {
 	TagValue        string `json:"tagValue"`
 	RepoValue       string `json:"repoValue"`
 	RepoPrefixValue string `json:"repoPrefixValue"`
-	Track           string `json:"track"`           // one of "PatchLevel", "MinorVersion", "MajorVersion", "Newest"
+	Track           string `json:"track"` // one of "PatchLevel", "MinorVersion", "MajorVersion", "Newest"
 }
 
 func (t *ImageTrigger) TagValueString() string {
