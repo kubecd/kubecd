@@ -7,8 +7,6 @@ import (
 
 type GkeClusterProvider struct{ baseClusterProvider }
 
-var _ ClusterProvider = &GkeClusterProvider{}
-
 func (p *GkeClusterProvider) GetClusterInitCommands() ([][]string, error) {
 	gcloudCommand := []string{
 		"gcloud", "container", "clusters", "get-credentials", "--project", p.Provider.GKE.Project,

@@ -6,8 +6,6 @@ import (
 
 type DockerForDesktopClusterProvider struct{ baseClusterProvider }
 
-var _ ClusterProvider = &DockerForDesktopClusterProvider{}
-
 func (p *DockerForDesktopClusterProvider) GetClusterInitCommands() ([][]string, error) {
 	return [][]string{{
 		"kubectl",

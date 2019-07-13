@@ -16,8 +16,6 @@ type TestRunner struct {
 	ExitCode        int
 }
 
-var _ Runner = TestRunner{}
-
 func (r TestRunner) Run(command string, args ...string) ([]byte, error) {
 	cs := []string{"-test.run=TestHelperProcess", "--", command}
 	cs = append(cs, args...)

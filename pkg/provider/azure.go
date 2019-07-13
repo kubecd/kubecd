@@ -6,8 +6,6 @@ import (
 
 type AksClusterProvider struct{ baseClusterProvider }
 
-var _ ClusterProvider = &AksClusterProvider{}
-
 func (p *AksClusterProvider) GetClusterInitCommands() ([][]string, error) {
 	panic("implement me")
 }

@@ -6,8 +6,6 @@ import (
 
 type MinikubeClusterProvider struct{ baseClusterProvider }
 
-var _ ClusterProvider = &MinikubeClusterProvider{}
-
 func (p *MinikubeClusterProvider) GetClusterInitCommands() ([][]string, error) {
 	return [][]string{}, nil
 }

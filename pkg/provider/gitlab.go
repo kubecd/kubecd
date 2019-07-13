@@ -4,8 +4,6 @@ import "github.com/zedge/kubecd/pkg/model"
 
 type GitlabClusterProvider struct{ baseClusterProvider }
 
-var _ ClusterProvider = &GitlabClusterProvider{}
-
 func (p *GitlabClusterProvider) GetClusterName() string {
 	return "gitlab-deploy"
 }

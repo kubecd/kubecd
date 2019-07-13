@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var _ Runner = TestRunner{}
+
 func TestTestRunner(t *testing.T) {
 	expected := "testing the test runner"
 	runner := TestRunner{Output: []byte(expected)}
