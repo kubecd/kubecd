@@ -16,10 +16,10 @@ RUN python setup.py clean sdist
 # Grab package from build step and install in a clean Python image,
 # along with kubectl, helm, gcloud, ssh and git
 FROM python:3.7
-ARG KUBECTL_VERSION=1.11.7
+ARG KUBECTL_VERSION=1.13.7
 ARG HELM_VERSION=2.9.1
-ARG GCLOUD_VERSION=230.0.0
-ARG HUB_VERSION=2.8.4
+ARG GCLOUD_VERSION=258.0.0
+ARG HUB_VERSION=2.12.3
 COPY --from=build /build/dist/kubecd-*.tar.gz /tmp/
 RUN pip install /tmp/kubecd-*.tar.gz
 RUN curl -Ls https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl \
