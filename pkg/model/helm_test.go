@@ -27,6 +27,9 @@ func TestFlexString_UnmarshalJSON(t *testing.T) {
 		{`"true"`, "true"},
 		{`false`, "false"},
 		{`"false"`, "false"},
+		{`0.1`, "0.1"},
+		{`"string"`, "string"},
+		{`0.100`, "0.1"},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			var fs FlexString

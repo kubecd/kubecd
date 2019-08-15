@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 )
 
@@ -40,10 +41,22 @@ func (is *FlexString) UnmarshalJSON(data []byte) error {
 		return json.Unmarshal(data, (*string)(is))
 	}
 	var i int
-	if err := json.Unmarshal(data, &i); err != nil {
+	err := json.Unmarshal(data, &i)
+	if err == nil {
+		*is = FlexString(strconv.Itoa(i))
+		return nil
+	}
+	var f float64
+	err = json.Unmarshal(data, &f)
+	if err == nil {
+		*is = FlexString(fmt.Sprintf("%g", f))
+		return nil
+	}
+	var s string
+	if err = json.Unmarshal(data, &s); err != nil {
 		return err
 	}
-	*is = FlexString(strconv.Itoa(i))
+	*is = FlexString(s)
 	return nil
 }
 
