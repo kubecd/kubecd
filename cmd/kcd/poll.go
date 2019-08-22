@@ -17,7 +17,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/zedge/kubecd/pkg/kubecd"
+	"github.com/zedge/kubecd/pkg/updates"
 	"github.com/zedge/kubecd/pkg/model"
 
 	"github.com/spf13/cobra"
@@ -42,19 +42,19 @@ var pollCmd = &cobra.Command{
 			return err
 		}
 		releaseFilters := makePollReleaseFilters(cmd, args)
-		imageIndex, err := kubecd.ImageReleaseIndex(kcdConfig, releaseFilters...)
+		imageIndex, err := updates.ImageReleaseIndex(kcdConfig, releaseFilters...)
 		if err != nil {
 			return err
 		}
-		imageTags, err := kubecd.BuildTagIndexFromDockerRegistries(imageIndex)
+		imageTags, err := updates.BuildTagIndexFromDockerRegistries(imageIndex)
 		if err != nil {
 			return err
 		}
-		allUpdates := make([]kubecd.ImageUpdate, 0)
+		allUpdates := make([]updates.ImageUpdate, 0)
 		for repo, releases := range imageIndex {
 			fmt.Printf("image: %s\n", repo)
 			for _, release := range releases {
-				imageUpdates, err := kubecd.FindImageUpdatesForRelease(release, imageTags)
+				imageUpdates, err := updates.FindImageUpdatesForRelease(release, imageTags)
 				if err != nil {
 					return err
 				}
@@ -72,18 +72,18 @@ var pollCmd = &cobra.Command{
 	},
 }
 
-func makePollReleaseFilters(cmd *cobra.Command, args []string) []kubecd.ReleaseFilterFunc {
-	filters := make([]kubecd.ReleaseFilterFunc, 0)
+func makePollReleaseFilters(cmd *cobra.Command, args []string) []updates.ReleaseFilterFunc {
+	filters := make([]updates.ReleaseFilterFunc, 0)
 	if pollCluster != "" {
-		filters = append(filters, kubecd.ClusterReleaseFilter(pollCluster))
+		filters = append(filters, updates.ClusterReleaseFilter(pollCluster))
 	} else {
-		filters = append(filters, kubecd.EnvironmentReleaseFilter(args[0]))
+		filters = append(filters, updates.EnvironmentReleaseFilter(args[0]))
 	}
 	if len(pollReleases) > 0 {
-		filters = append(filters, kubecd.ReleaseFilter(pollReleases))
+		filters = append(filters, updates.ReleaseFilter(pollReleases))
 	}
 	if pollImage != "" {
-		filters = append(filters, kubecd.ImageReleaseFilter(pollImage))
+		filters = append(filters, updates.ImageReleaseFilter(pollImage))
 	}
 	return filters
 }

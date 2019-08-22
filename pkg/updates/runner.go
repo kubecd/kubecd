@@ -1,4 +1,4 @@
-package kubecd
+package updates
 
 import (
 	"github.com/zedge/kubecd/pkg/exec"

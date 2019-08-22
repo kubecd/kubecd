@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zedge/kubecd/pkg/image"
-	"github.com/zedge/kubecd/pkg/kubecd"
+	"github.com/zedge/kubecd/pkg/updates"
 	"github.com/zedge/kubecd/pkg/model"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -82,15 +82,15 @@ func observeImageTag(kcdConfig *model.KubeCDConfig, cmd *cobra.Command, args []s
 		}
 	}
 	releaseFilters := makeObserveReleaseFilters(args)
-	imageIndex, err := kubecd.ImageReleaseIndex(kcdConfig, releaseFilters...)
+	imageIndex, err := updates.ImageReleaseIndex(kcdConfig, releaseFilters...)
 	if err != nil {
 		return err
 	}
 	newImage := image.NewDockerImageRef(observeImage)
-	imageTags := kubecd.BuildTagIndexFromNewImageRef(newImage, imageIndex)
-	allUpdates := make([]kubecd.ImageUpdate, 0)
+	imageTags := updates.BuildTagIndexFromNewImageRef(newImage, imageIndex)
+	allUpdates := make([]updates.ImageUpdate, 0)
 	for _, release := range imageIndex[newImage.WithoutTag()] {
-		imageUpdates, err := kubecd.FindImageUpdatesForRelease(release, imageTags)
+		imageUpdates, err := updates.FindImageUpdatesForRelease(release, imageTags)
 		if err != nil {
 			return err
 		}
@@ -106,16 +106,16 @@ func observeImageTag(kcdConfig *model.KubeCDConfig, cmd *cobra.Command, args []s
 	return nil
 }
 
-func makeObserveReleaseFilters(args []string) []kubecd.ReleaseFilterFunc {
-	filters := make([]kubecd.ReleaseFilterFunc, 0)
+func makeObserveReleaseFilters(args []string) []updates.ReleaseFilterFunc {
+	filters := make([]updates.ReleaseFilterFunc, 0)
 	if len(observeReleases) > 0 {
-		filters = append(filters, kubecd.ReleaseFilter(observeReleases))
+		filters = append(filters, updates.ReleaseFilter(observeReleases))
 	}
 	if len(args) == 1 {
-		filters = append(filters, kubecd.EnvironmentReleaseFilter(args[0]))
+		filters = append(filters, updates.EnvironmentReleaseFilter(args[0]))
 	}
 	if observeImage != "" {
-		filters = append(filters, kubecd.ImageReleaseFilter(observeImage))
+		filters = append(filters, updates.ImageReleaseFilter(observeImage))
 	}
 	return filters
 }
@@ -170,17 +170,17 @@ func makeObserveReleaseFilters(args []string) []kubecd.ReleaseFilterFunc {
 //	return nil
 //}
 
-func patchReleasesFilesMaybe(updates []kubecd.ImageUpdate, patch bool) error {
+func patchReleasesFilesMaybe(updates []updates.ImageUpdate, patch bool) error {
 	verb := "May"
 	if patch {
 		verb = "Will"
 	}
-	updatesPerFile := make(map[string][]kubecd.ImageUpdate)
+	updatesPerFile := make(map[string][]updates.ImageUpdate)
 	for _, update := range updates {
 		fmt.Printf("%s update release %q image %q tag %s -> %s\n", verb, update.Release.Name, update.ImageRepo, update.OldTag, update.NewTag)
 		file := update.Release.FromFile
 		if _, found := updatesPerFile[file]; !found {
-			updatesPerFile[file] = make([]kubecd.ImageUpdate, 0)
+			updatesPerFile[file] = make([]updates.ImageUpdate, 0)
 		}
 		updatesPerFile[file] = append(updatesPerFile[file], update)
 	}
@@ -195,7 +195,7 @@ func patchReleasesFilesMaybe(updates []kubecd.ImageUpdate, patch bool) error {
 	return nil
 }
 
-func patchImageUpdatesYamlNode(releasesFile string, updates []kubecd.ImageUpdate) error {
+func patchImageUpdatesYamlNode(releasesFile string, updates []updates.ImageUpdate) error {
 	var doc yaml.Node
 	data, err := ioutil.ReadFile(releasesFile)
 	if err != nil {
