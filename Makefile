@@ -37,3 +37,6 @@ release: clean test
 
 upload:
 	python setup.py clean sdist upload
+
+build:
+	@go build -o bin/kubecd ./cmd/kcd

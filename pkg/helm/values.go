@@ -132,6 +132,36 @@ func DeployCommands(env *model.Environment, dryRun, debug bool, limitToReleases 
 	return commands, nil
 }
 
+func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]string, error) {
+	var commands [][]string
+	for _, releaseName := range limitToReleases {
+		if env.GetRelease(releaseName) == nil {
+			return nil, fmt.Errorf(`env %q: release not found: %q`, env.Name, releaseName)
+		}
+	}
+	for _, release := range env.AllReleases() {
+		if len(limitToReleases) == 0 || stringInSlice(release.Name, limitToReleases) {
+			relFile := release.FromFile
+			if release.Chart != nil {
+				tmp, err := GenerateTemplateArgv(release, env); if err != nil {
+					return nil, err
+				}
+				commands = append(commands, tmp)
+			} else if release.ResourceFiles != nil {
+				for _, path := range release.ResourceFiles {
+					commands = append(commands, []string{"echo", "---"})
+					commands = append(commands, []string{"echo", "#", "Source: " + model.ResolvePathFromFile(path, relFile)})
+					commands = append(commands, []string{"cat", model.ResolvePathFromFile(path, relFile)})
+					commands = append(commands, []string{"echo", "---"})
+				}
+
+			}
+		}
+	}
+	return commands, nil
+}
+
+
 func GenerateHelmBaseArgv(env *model.Environment) []string {
 	return []string{"helm", "--kube-context", model.KubeContextName(env.Name)}
 }
@@ -202,14 +232,27 @@ func GenerateHelmDiffArgv(rel *model.Release, env *model.Environment) ([]string,
 	return argv, nil
 }
 
-func GenerateHelmTemplateArgv(rel *model.Release, env *model.Environment) ([]string, error) {
-	argv := GenerateHelmBaseArgv(env)
-	chartDir := rel.AbsPath(*rel.Chart.Dir)
-	argv = append(argv, "template", chartDir, "-n", rel.Name, "--namespace", env.KubeNamespace)
+func GenerateTemplateArgv(rel *model.Release, env *model.Environment) ([]string, error) {
+	var argv []string
+	if rel.Chart.Reference != nil {
+		argv = append(argv, "sh", "-c", "(_kubecd_tmp_unpack=$(mktemp -d) && cd $_kubecd_tmp_unpack && helm fetch " +
+			*rel.Chart.Reference + " --version " + *rel.Chart.Version + " --untar --untardir . &&" + "cd * && helm template . )")
+		return argv, nil
+	}
+
+	chartArgs, err := GenerateHelmChartArgs(rel)
+	if err != nil {
+		return []string{}, err
+	}
 	valueArgs, err := GenerateHelmValuesArgv(rel, env)
 	if err != nil {
 		return []string{}, err
 	}
+
+	argv = GenerateHelmBaseArgv(env)
+	argv = append(argv, "template")
+	argv = append(argv, chartArgs...)
+	argv = append(argv,"-n", rel.Name, "--namespace", env.KubeNamespace)
 	argv = append(argv, valueArgs...)
 	return argv, nil
 }
