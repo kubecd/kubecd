@@ -108,7 +108,11 @@ func initConfig() {
 
 func runCommand(dryRun bool, argv []string) error {
 	printCmd := strings.Join(argv, " ")
-	_, _ = colorstring.Printf("[yellow]%s\n", printCmd)
+
+	if !pipeFriendly {
+		_, _ = colorstring.Printf("[yellow]%s\n", printCmd)
+	}
+
 	if !dryRun {
 		cmd := exec.Command(argv[0], argv[1:]...)
 		cmd.Stdout = os.Stdout
