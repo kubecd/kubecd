@@ -48,7 +48,7 @@ func TestParseDockerTimestamp(t *testing.T) {
 }
 
 func TestGetTagsForGcrImage(t *testing.T) {
-	fixture, err := ioutil.ReadFile("../../kubecd/tests/testdata/gcr-airflow-tags.json")
+	fixture, err := ioutil.ReadFile("testdata/gcr-airflow-tags.json")
 	require.NoError(t, err)
 	imageRef := &DockerImageRef{Registry: "gcr.io", Image: "my-project/some-image"}
 	runner = exec.TestRunner{
