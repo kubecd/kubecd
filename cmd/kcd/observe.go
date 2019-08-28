@@ -17,13 +17,15 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/zedge/kubecd/pkg/image"
-	"github.com/zedge/kubecd/pkg/updates"
-	"github.com/zedge/kubecd/pkg/model"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
+
+	"github.com/zedge/kubecd/pkg/image"
+	"github.com/zedge/kubecd/pkg/model"
+	"github.com/zedge/kubecd/pkg/updates"
 )
 
 var (
@@ -170,13 +172,13 @@ func makeObserveReleaseFilters(args []string) []updates.ReleaseFilterFunc {
 //	return nil
 //}
 
-func patchReleasesFilesMaybe(updates []updates.ImageUpdate, patch bool) error {
+func patchReleasesFilesMaybe(imageUpdates []updates.ImageUpdate, patch bool) error {
 	verb := "May"
 	if patch {
 		verb = "Will"
 	}
 	updatesPerFile := make(map[string][]updates.ImageUpdate)
-	for _, update := range updates {
+	for _, update := range imageUpdates {
 		fmt.Printf("%s update release %q image %q tag %s -> %s\n", verb, update.Release.Name, update.ImageRepo, update.OldTag, update.NewTag)
 		file := update.Release.FromFile
 		if _, found := updatesPerFile[file]; !found {
@@ -185,9 +187,9 @@ func patchReleasesFilesMaybe(updates []updates.ImageUpdate, patch bool) error {
 		updatesPerFile[file] = append(updatesPerFile[file], update)
 	}
 	if patch {
-		for file, updates := range updatesPerFile {
+		for file, fileUpdates := range updatesPerFile {
 			fmt.Printf("Patching file: %s\n", file)
-			if err := patchImageUpdatesYamlNode(file, updates); err != nil {
+			if err := patchImageUpdatesYamlNode(file, fileUpdates); err != nil {
 				return err
 			}
 		}
@@ -195,7 +197,7 @@ func patchReleasesFilesMaybe(updates []updates.ImageUpdate, patch bool) error {
 	return nil
 }
 
-func patchImageUpdatesYamlNode(releasesFile string, updates []updates.ImageUpdate) error {
+func patchImageUpdatesYamlNode(releasesFile string, imageUpdates []updates.ImageUpdate) error {
 	var doc yaml.Node
 	data, err := ioutil.ReadFile(releasesFile)
 	if err != nil {
@@ -215,7 +217,7 @@ func patchImageUpdatesYamlNode(releasesFile string, updates []updates.ImageUpdat
 		if name == nil || name.Kind != yaml.ScalarNode {
 			continue
 		}
-		for _, update := range updates {
+		for _, update := range imageUpdates {
 			if update.Release.Name != name.Value {
 				continue
 			}
