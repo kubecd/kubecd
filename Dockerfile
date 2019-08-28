@@ -6,7 +6,7 @@ RUN cd /src; CGO_ENABLED=0 go build ./cmd/kcd
 
 # Grab binary from build step and install in a clean Python image,
 # along with kubectl, helm, gcloud, ssh and git
-FROM debian:stretch-slim
+FROM debian:stretch
 ARG KUBECTL_VERSION=1.13.7
 ARG HELM_VERSION=2.9.1
 ARG GCLOUD_VERSION=258.0.0
