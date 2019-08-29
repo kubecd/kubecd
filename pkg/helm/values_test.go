@@ -158,6 +158,6 @@ func TestGetImageRepoFromImageTrigger(t *testing.T) {
 	valuesWithPrefix := map[string]interface{}{
 		"image": map[string]interface{}{"prefix": "example.io/", "repository": "test-image"},
 	}
-	assert.Equal(t, image.DefaultDockerRegistry + "/test-image", GetImageRefFromImageTrigger(trigger, valuesWithoutPrefix).WithoutTag())
+	assert.Equal(t, image.DefaultDockerRegistry+"/test-image", GetImageRefFromImageTrigger(trigger, valuesWithoutPrefix).WithoutTag())
 	assert.Equal(t, "example.io/test-image", GetImageRefFromImageTrigger(trigger, valuesWithPrefix).WithoutTag())
 }

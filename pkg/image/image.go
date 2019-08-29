@@ -206,4 +206,3 @@ func GetNewestMatchingTag(currentTag TimestampedTag, candidateTags []Timestamped
 	}
 	return semTagMap[newest.String()]
 }
-

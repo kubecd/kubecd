@@ -17,8 +17,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/zedge/kubecd/pkg/updates"
 	"github.com/zedge/kubecd/pkg/model"
+	"github.com/zedge/kubecd/pkg/updates"
 
 	"github.com/spf13/cobra"
 )

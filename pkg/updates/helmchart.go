@@ -62,12 +62,12 @@ func FindImageUpdatesForRelease(release *model.Release, tagIndex TagIndex) ([]Im
 		newestTag := image.GetNewestMatchingTag(currentTag, imageTags, trigger.Image.Track)
 		if newestTag.Tag != currentTag.Tag {
 			updates = append(updates, ImageUpdate{
-				OldTag: currentTag.Tag,
-				NewTag: newestTag.Tag,
-				Release: release,
-				TagValue: trigger.Image.TagValueString(),
+				OldTag:    currentTag.Tag,
+				NewTag:    newestTag.Tag,
+				Release:   release,
+				TagValue:  trigger.Image.TagValueString(),
 				ImageRepo: imageRef.WithoutTag(),
-				Reason: "FIXME",
+				Reason:    "FIXME",
 			})
 		}
 	}
