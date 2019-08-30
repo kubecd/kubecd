@@ -35,6 +35,10 @@ namespace in one cluster, but the environment names must be unique within this f
 Example:
 
 ```yaml
+helmRepos:
+  - name: stable
+    url: https://kubernetes-charts.storage.googleapis.com/
+
 clusters:
   - name: prod-cluster
     provider:
@@ -85,37 +89,36 @@ in every single release/deployment.
 Once you have your environments defined, you need to configure what should be deployed into each of them.
 This is expressed as "releases" (term borrowed from Helm).
 
+A "releases" file contains a list of releases, for example:
+
+```yaml
+releases:
+  - name: ingress
+    chart:
+      reference: stable/nginx-ingress
+      version: 1.15.0
+    valuesFile: values-ingress.yaml
+```
+
+See more examples here: [releases-common.yaml](demo/releases-common.yaml),
+[releases-prod.yaml](demo/releases-prod.yaml), [releases-test.yaml](demo/releases-test.yaml).
+
 ## Installing and Running
 
+To produce a `kcd` binary:
+
+```
+make build
+```
 
 ## Contributing
+
+When submitting PRs, please ensure your code passes `gofmt`, `go vet` and `go test`.
+
+For bigger changes, please [create an issue](https://github.com/zedge/kubecd/issues/new) proposing the
+change in advance.
+
 
 ### Design Document
 
 [Can be found here.](docs/design.md)
-
-### Running From Source
-
-This project requires Python 3.5 and Docker.
-
-Then you need to generated Thrift source and install a shim that runs directly from your checked out source:
-
-    pip install -r requirements.txt
-    make
-    kcd --version
-
-### Testing
-
-To run tests, first install test dependencies:
-
-    pip install -r requirements.txt -r requirements-dev.txt
-    make test
-
-### Making Releases
-
-To make a new release:
-
- 1. commit and push all changes
- 2. run `bumpversion minor` (or major/patch) to update `__version__` in [`kubecd/__init__.py`](kubecd/__init__.py)
- 3. run `python setup.py release` - this will make and push a Git tag, which will kick off the actual
-    release process driven by Travis
