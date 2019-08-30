@@ -3,16 +3,24 @@
 project_name: kubecd
 before:
   hooks:
-    - make clean build
+    - make clean
 builds:
-- env:
-  - CGO_ENABLED=0
-  - GO111MODULE=on
+  - main: ./cmd/kcd/main.go
+    binary: kcd
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
 archives:
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    amd64: x86_64
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -23,3 +31,5 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+    - '^build:'
+

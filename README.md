@@ -1,7 +1,6 @@
 # Kubernetes Continuous Deployment Tool
 
-[![Build Status](https://travis-ci.org/zedge/kubecd.svg?branch=master)](https://travis-ci.org/zedge/kubecd)
-[![Latest PyPI version](https://img.shields.io/pypi/v/kubecd.svg?style=flat)](https://pypi.python.org/pypi/kubecd/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/zedge/kubecd)](https://goreportcard.com/report/github.com/zedge/kubecd)
 
 `kubecd` is a deployment tool for Kubernetes that lets you declare in Git what should be deployed in all your
 environments, manage image upgrade strategies per service, and make it so. It supports any Kubernetes installation
@@ -28,9 +27,9 @@ command-line tools. An operator is being planned, but we want to see where
 
 All the deployable environments are configured in a file typically called
 `environments.yaml`. The schema for this file
-[can be found here (check the `KubeCDConfig` struct)](idl/github.com/zedge/kubecd/kubecd.thrift).
+[can be found here (check the `KubeCDConfig` struct)](pkg/model/model.go).
 
-This file must contain two main objects, `clusters` and `environments`. Each environments maps to one
+This file must contain two sections/keys, `clusters` and `environments`. Each environments maps to one
 namespace in one cluster, but the environment names must be unique within this file.
 
 Example:
@@ -78,8 +77,8 @@ environments:
 Here, we have defined two environments, `test` and `prod`, each running in separate GKE clusters in
 different GCP projects. We have also set some default helm chart values which will be automatically applied
 to every chart deployed into those environments, so that if your chart uses the `ingress.domain` value to
-construct the full Ingress host, you do not have to worry about specifying that anywhere else than in the
-environment definition.
+construct the full Ingress host, you do not have to worry about specifying or overriding that domain part
+in every single release/deployment.
 
 ## Configuring Releases
 
@@ -88,19 +87,6 @@ This is expressed as "releases" (term borrowed from Helm).
 
 ## Installing and Running
 
-First, ensure you have Python 3.5 (run `python3 --version`).
-
-Then install KubeCD from PyPI:
-
-    pip install kubecd
-    kcd --help
-
-If you are using an OS that ships only with Python 2.7 (such as Ubuntu), you can use
-[pipsi](https://github.com/mitsuhiko/pipsi) instead, and add `~/.local/bin` to your PATH:
-
-    pip install pipsi
-    pipsi install --python=python3 kubecd
-    export PATH=$HOME/.local/bin:$PATH
 
 ## Contributing
 

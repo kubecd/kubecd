@@ -6,9 +6,7 @@ KCD_IMAGE_TAG=latest
 all: build
 
 build:
-	GOOS=darwin GOARCH=amd64 go build -o kcd-darwin-amd64 ./cmd/kcd
-	GOOS=linux GOARCH=amd64 go build -o kcd-linux-amd64 ./cmd/kcd
-
+	go build ./cmd/kcd
 
 image:
 	docker build -t $(KCD_IMAGE):$(KCD_IMAGE_TAG) .
@@ -17,10 +15,10 @@ image-push: image
 	docker push $(KCD_IMAGE):$(KCD_IMAGE_TAG)
 
 clean:
-	go clean
+	go clean ./...
 
 test:
-	go test
+	go test ./...
 
 #release: clean test
 
