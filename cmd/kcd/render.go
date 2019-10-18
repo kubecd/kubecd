@@ -22,10 +22,10 @@ import (
 )
 
 var (
-	renderReleases     []string
-	renderCluster      string
-	renderInit         bool
-	renderGitlab       bool
+	renderReleases []string
+	renderCluster  string
+	renderInit     bool
+	renderGitlab   bool
 )
 
 var renderCmd = &cobra.Command{
