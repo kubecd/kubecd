@@ -143,7 +143,8 @@ func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]str
 		if len(limitToReleases) == 0 || stringInSlice(release.Name, limitToReleases) {
 			relFile := release.FromFile
 			if release.Chart != nil {
-				tmp, err := GenerateTemplateArgv(release, env); if err != nil {
+				tmp, err := GenerateTemplateArgv(release, env)
+				if err != nil {
 					return nil, err
 				}
 				commands = append(commands, tmp)
@@ -160,7 +161,6 @@ func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]str
 	}
 	return commands, nil
 }
-
 
 func GenerateHelmBaseArgv(env *model.Environment) []string {
 	return []string{"helm", "--kube-context", model.KubeContextName(env.Name)}
@@ -232,11 +232,20 @@ func GenerateHelmDiffArgv(rel *model.Release, env *model.Environment) ([]string,
 	return argv, nil
 }
 
+// Contains two %s placeholders, the first is for the chart reference,
+// the second is for the chart version.
+const templateShellCommandTemplate = `
+set -e
+_tmpdir=$(mktemp -d kubecd-template.XXXXXX)
+trap "rm -rf $_tmpdir" EXIT
+helm fetch %s --version %s --untar --untardir $_tmpdir
+helm template $_tmpdir/*
+`
+
 func GenerateTemplateArgv(rel *model.Release, env *model.Environment) ([]string, error) {
 	var argv []string
 	if rel.Chart.Reference != nil {
-		argv = append(argv, "sh", "-c", "(_kubecd_tmp_unpack=$(mktemp -d) && cd $_kubecd_tmp_unpack && helm fetch " +
-			*rel.Chart.Reference + " --version " + *rel.Chart.Version + " --untar --untardir . &&" + "cd * && helm template . )")
+		argv = append(argv, "bash", "-c", fmt.Sprintf(templateShellCommandTemplate, *rel.Chart.Reference, *rel.Chart.Version))
 		return argv, nil
 	}
 
@@ -252,7 +261,7 @@ func GenerateTemplateArgv(rel *model.Release, env *model.Environment) ([]string,
 	argv = GenerateHelmBaseArgv(env)
 	argv = append(argv, "template")
 	argv = append(argv, chartArgs...)
-	argv = append(argv,"-n", rel.Name, "--namespace", env.KubeNamespace)
+	argv = append(argv, "-n", rel.Name, "--namespace", env.KubeNamespace)
 	argv = append(argv, valueArgs...)
 	return argv, nil
 }

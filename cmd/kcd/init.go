@@ -50,7 +50,7 @@ var initCmd = &cobra.Command{
 		}
 		cmds = append(cmds, initCmds...)
 		for _, argv := range cmds {
-			if err = runCommand(initDryRun, argv); err != nil {
+			if err = runCommand(initDryRun, false, argv); err != nil {
 				return err
 			}
 		}

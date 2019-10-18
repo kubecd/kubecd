@@ -40,7 +40,7 @@ var useCmd = &cobra.Command{
 			return fmt.Errorf(`unknown environment %q`, args[0])
 		}
 		argv := helm.UseContextCommand(env.Name)
-		if err = runCommand(useDryRun, argv); err != nil {
+		if err = runCommand(useDryRun, false, argv); err != nil {
 			return err
 		}
 		return nil

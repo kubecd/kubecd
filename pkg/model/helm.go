@@ -36,6 +36,9 @@ type HelmRepo struct {
 }
 
 func (is *FlexString) UnmarshalJSON(data []byte) error {
+	if string(data) == "true" || string(data) == "false" {
+		data = []byte(`"` + string(data) + `"`)
+	}
 	if data[0] == '"' {
 		return json.Unmarshal(data, (*string)(is))
 	}

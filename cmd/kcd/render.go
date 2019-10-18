@@ -21,14 +21,18 @@ import (
 	"github.com/zedge/kubecd/pkg/model"
 )
 
-var pipeFriendly bool
-
+var (
+	renderReleases     []string
+	renderCluster      string
+	renderInit         bool
+	renderGitlab       bool
+)
 
 var renderCmd = &cobra.Command{
 	Use:   "render",
 	Short: "show helm templates and plain kubernetes YAML resources",
 	Long:  ``,
-	Args:  clusterFlagOrEnvArg(&applyCluster),
+	Args:  clusterFlagOrEnvArg(&renderCluster),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		kcdConfig, err := model.NewConfigFromFile(environmentsFile)
 		if err != nil {
@@ -43,7 +47,7 @@ var renderCmd = &cobra.Command{
 			return err
 		}
 		for _, argv := range commandsToRun {
-			if err = runCommand(applyDryRun, argv); err != nil {
+			if err = runCommand(false, true, argv); err != nil {
 				return err
 			}
 		}
@@ -54,8 +58,8 @@ var renderCmd = &cobra.Command{
 func commandsToRender(envsToApply []*model.Environment) ([][]string, error) {
 	commandsToRun := make([][]string, 0)
 	for _, env := range envsToApply {
-		if applyInit {
-			initCmds, err := commandsToInit(envsToApply, applyGitlab)
+		if renderInit {
+			initCmds, err := commandsToInit(envsToApply, renderGitlab)
 			if err != nil {
 				return nil, err
 			}
@@ -63,7 +67,7 @@ func commandsToRender(envsToApply []*model.Environment) ([][]string, error) {
 				commandsToRun = append(commandsToRun, cmd)
 			}
 		}
-		deployCmds, err := helm.TemplateCommands(env, applyReleases)
+		deployCmds, err := helm.TemplateCommands(env, renderReleases)
 		if err != nil {
 			return nil, err
 		}
@@ -74,12 +78,10 @@ func commandsToRender(envsToApply []*model.Environment) ([][]string, error) {
 	return commandsToRun, nil
 }
 
-
 func init() {
 	rootCmd.AddCommand(renderCmd)
-	renderCmd.Flags().BoolVar(&pipeFriendly, "pipe", false, "Make output pipe friendly for kubeval")
-	renderCmd.Flags().StringSliceVarP(&applyReleases, "releases", "r", []string{}, "generate template only these releases")
-	renderCmd.Flags().StringVarP(&applyCluster, "cluster", "c", "", "template all environments in CLUSTER")
-	renderCmd.Flags().BoolVar(&applyInit, "init", false, "initialize credentials and contexts")
-	renderCmd.Flags().BoolVar(&applyGitlab, "gitlab", false, "initialize in gitlab mode")
+	renderCmd.Flags().StringSliceVarP(&renderReleases, "releases", "r", []string{}, "generate template only these releases")
+	renderCmd.Flags().StringVarP(&renderCluster, "cluster", "c", "", "template all environments in CLUSTER")
+	renderCmd.Flags().BoolVar(&renderInit, "init", false, "initialize credentials and contexts")
+	renderCmd.Flags().BoolVar(&renderGitlab, "gitlab", false, "initialize in gitlab mode")
 }

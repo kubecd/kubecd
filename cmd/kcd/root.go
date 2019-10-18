@@ -106,10 +106,10 @@ func initConfig() {
 	}
 }
 
-func runCommand(dryRun bool, argv []string) error {
+func runCommand(dryRun, disableColors bool, argv []string) error {
 	printCmd := strings.Join(argv, " ")
 
-	if !pipeFriendly {
+	if !disableColors {
 		_, _ = colorstring.Printf("[yellow]%s\n", printCmd)
 	}
 
