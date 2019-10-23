@@ -32,7 +32,7 @@ var cfgFile string
 
 var environmentsFile string
 var verbosity int
-var showVersion bool
+var version = "snapshot"
 
 type NotYetImplementedError string
 
@@ -76,7 +76,6 @@ func init() {
 		defaultEnvFile = "environments.yaml"
 	}
 	rootCmd.PersistentFlags().StringVarP(&environmentsFile, "environments-file", "f", defaultEnvFile, `KubeCD config file file (default $KUBECD_ENVIRONMENTS or "environments.yaml")`)
-	rootCmd.PersistentFlags().BoolVar(&showVersion, "version", false, "Show version and exit")
 	rootCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v", "Increase verbosity level")
 }
 
