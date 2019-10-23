@@ -3,14 +3,17 @@ package helm
 import (
 	"crypto/sha1"
 	"fmt"
-	"github.com/ghodss/yaml"
-	"github.com/zedge/kubecd/pkg/image"
 	"io/ioutil"
 	"os"
 	"os/user"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/ghodss/yaml"
+
+	"github.com/zedge/kubecd/pkg/image"
 
 	"github.com/zedge/kubecd/pkg/exec"
 	"github.com/zedge/kubecd/pkg/model"
@@ -132,6 +135,36 @@ func DeployCommands(env *model.Environment, dryRun, debug bool, limitToReleases 
 	return commands, nil
 }
 
+func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]string, error) {
+	var commands [][]string
+	for _, releaseName := range limitToReleases {
+		if env.GetRelease(releaseName) == nil {
+			return nil, fmt.Errorf(`env %q: release not found: %q`, env.Name, releaseName)
+		}
+	}
+	for _, release := range env.AllReleases() {
+		if len(limitToReleases) == 0 || stringInSlice(release.Name, limitToReleases) {
+			relFile := release.FromFile
+			if release.Chart != nil {
+				tmp, err := GenerateTemplateCommands(release, env)
+				if err != nil {
+					return nil, err
+				}
+				commands = append(commands, tmp...)
+			} else if release.ResourceFiles != nil {
+				for _, resourceFile := range release.ResourceFiles {
+					commands = append(commands, []string{"echo", "---"})
+					commands = append(commands, []string{"echo", "#", "Source:", model.ResolvePathFromFile(resourceFile, relFile)})
+					commands = append(commands, []string{"cat", model.ResolvePathFromFile(resourceFile, relFile)})
+					commands = append(commands, []string{"echo", "---"})
+				}
+
+			}
+		}
+	}
+	return commands, nil
+}
+
 func GenerateHelmBaseArgv(env *model.Environment) []string {
 	return []string{"helm", "--kube-context", model.KubeContextName(env.Name)}
 }
@@ -202,16 +235,49 @@ func GenerateHelmDiffArgv(rel *model.Release, env *model.Environment) ([]string,
 	return argv, nil
 }
 
-func GenerateHelmTemplateArgv(rel *model.Release, env *model.Environment) ([]string, error) {
-	argv := GenerateHelmBaseArgv(env)
-	chartDir := rel.AbsPath(*rel.Chart.Dir)
-	argv = append(argv, "template", chartDir, "-n", rel.Name, "--namespace", env.KubeNamespace)
-	valueArgs, err := GenerateHelmValuesArgv(rel, env)
-	if err != nil {
-		return []string{}, err
+func GenerateTemplateCommands(rel *model.Release, env *model.Environment) ([][]string, error) {
+	var commands [][]string
+	var tmpDir string
+	if rel.Chart.Reference != nil {
+		reference := *rel.Chart.Reference
+		version := *rel.Chart.Version
+		tmpDir = path.Join(os.TempDir(), fmt.Sprintf("kcd-template.%d", os.Getpid()))
+		// Make a copy of Release.Chart so we can modify it
+		var relCopy model.Release
+		relCopy = *rel
+		var chartCopy model.Chart
+		chartCopy = *rel.Chart
+		chartCopy.Reference = nil
+		chartCopy.Version = nil
+		// Assumes that "helm fetch --untar" always uses the chart/reference name as the directory
+		newDir := path.Join(tmpDir, path.Base(reference))
+		chartCopy.Dir = &newDir
+		relCopy.Chart = &chartCopy
+		rel = &relCopy
+		commands = append(commands, []string{"mkdir", "-m", "700", "-p", tmpDir})
+		commands = append(commands, []string{"helm", "fetch", reference, "--version", version, "--untar", "--untardir", tmpDir})
 	}
-	argv = append(argv, valueArgs...)
-	return argv, nil
+	chartArgs, err := GenerateHelmChartArgs(rel)
+	var valueArgs []string
+	if err == nil {
+		valueArgs, err = GenerateHelmValuesArgv(rel, env)
+	}
+	if err != nil {
+		return [][]string{}, err
+	}
+
+	templateArgv := GenerateHelmBaseArgv(env)
+	templateArgv = append(templateArgv, "template")
+	templateArgv = append(templateArgv, chartArgs...)
+	templateArgv = append(templateArgv, "-n", rel.Name, "--namespace", env.KubeNamespace)
+	templateArgv = append(templateArgv, valueArgs...)
+	commands = append(commands, templateArgv)
+
+	if tmpDir != "" {
+		commands = append(commands, []string{"rm", "-rf", tmpDir})
+	}
+
+	return commands, nil
 }
 
 func GenerateHelmApplyArgv(rel *model.Release, env *model.Environment, dryRun, debug bool) ([]string, error) {

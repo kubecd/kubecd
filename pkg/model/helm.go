@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"github.com/ghodss/yaml"
 )
 
 type ChartValueRef struct {
@@ -56,7 +58,13 @@ func (is *FlexString) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &s); err != nil {
 		return err
 	}
-	*is = FlexString(s)
+
+	data2, err := yaml.YAMLToJSON(data)
+	if err != nil {
+		return err
+	}
+
+	*is = FlexString(data2)
 	return nil
 }
 

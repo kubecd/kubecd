@@ -50,7 +50,7 @@ var applyCmd = &cobra.Command{
 			return err
 		}
 		for _, argv := range commandsToRun {
-			if err = runCommand(false, argv); err != nil {
+			if err = runCommand(false, false, argv); err != nil {
 				return err
 			}
 		}

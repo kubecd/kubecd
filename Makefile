@@ -23,5 +23,3 @@ test:
 	go test ./...
 
 #release: clean test
-
-#upload:
