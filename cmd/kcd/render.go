@@ -22,6 +22,7 @@ import (
 )
 
 var (
+	renderDryRun   bool
 	renderReleases []string
 	renderCluster  string
 	renderInit     bool
@@ -47,7 +48,7 @@ var renderCmd = &cobra.Command{
 			return err
 		}
 		for _, argv := range commandsToRun {
-			if err = runCommand(false, true, argv); err != nil {
+			if err = runCommand(renderDryRun, false, argv); err != nil {
 				return err
 			}
 		}
@@ -80,6 +81,7 @@ func commandsToRender(envsToApply []*model.Environment) ([][]string, error) {
 
 func init() {
 	rootCmd.AddCommand(renderCmd)
+	renderCmd.Flags().BoolVarP(&renderDryRun, "dry-run", "n", false, "dry run mode, only print commands")
 	renderCmd.Flags().StringSliceVarP(&renderReleases, "releases", "r", []string{}, "generate template only these releases")
 	renderCmd.Flags().StringVarP(&renderCluster, "cluster", "c", "", "template all environments in CLUSTER")
 	renderCmd.Flags().BoolVar(&renderInit, "init", false, "initialize credentials and contexts")

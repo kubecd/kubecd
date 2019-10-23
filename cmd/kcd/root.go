@@ -110,7 +110,7 @@ func runCommand(dryRun, disableColors bool, argv []string) error {
 	printCmd := strings.Join(argv, " ")
 
 	if !disableColors {
-		_, _ = colorstring.Printf("[yellow]%s\n", printCmd)
+		_, _ = colorstring.Fprintf(os.Stderr, "[yellow]%s\n", printCmd)
 	}
 
 	if !dryRun {
