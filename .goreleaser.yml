@@ -33,6 +33,7 @@ changelog:
     - '^test:'
     - '^build:'
     - '^WiP'
+    - '^housekeeping:'
 release:
   github:
     owner: zedge

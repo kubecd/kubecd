@@ -1,5 +1,0 @@
-[flake8]
-max-line-length = 160
-# ignore = D203
-exclude = .git, __pycache__, kubecd/gen_py, build, dist
-max-complexity = 10
