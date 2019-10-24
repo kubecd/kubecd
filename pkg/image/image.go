@@ -33,15 +33,15 @@ func NewDockerImageRef(repo string) *DockerImageRef {
 	return parseImageRepo(repo)
 }
 
-func (r *DockerImageRef) RegistryURL() string {
+func (r DockerImageRef) RegistryURL() string {
 	return "https://" + r.Registry
 }
 
-func (r *DockerImageRef) WithTag() string {
+func (r DockerImageRef) WithTag() string {
 	return r.WithoutTag() + ":" + r.Tag
 }
 
-func (r *DockerImageRef) WithoutTag() string {
+func (r DockerImageRef) WithoutTag() string {
 	tmp := ""
 	if r.Registry != "" {
 		tmp += r.Registry + "/"
