@@ -14,11 +14,12 @@ var remotesRegexp = regexp.MustCompile(`([a-z0-9A-Z_.-]+)\t.*github.com[/:]zedge
 var lsRemoteRegexp = regexp.MustCompile(`.*/v`)
 
 type bumpMode string
+
 const (
-	bumpMajor bumpMode = "major"
-	bumpMinor bumpMode = "minor"
-	bumpPatch bumpMode = "patch"
-	defaultBump = bumpMinor
+	bumpMajor   bumpMode = "major"
+	bumpMinor   bumpMode = "minor"
+	bumpPatch   bumpMode = "patch"
+	defaultBump          = bumpMinor
 )
 
 func (m bumpMode) Bump(ver semver.Version) string {
