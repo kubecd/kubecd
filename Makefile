@@ -27,4 +27,15 @@ test: fmt
 	go vet ./...
 	go test ./...
 
-#release: clean test
+clean-workspace:
+	@(test "$(git status --short)" = '' && git diff --quiet) || { \
+	  echo "Workspace not clean!"; \
+	  exit 1; \
+	}
+
+release: clean-workspace
+	set -e; \
+	tag=$$(go run ./cmd/bumpversion/ $(BUMP)); \
+	echo "Next tag: $$tag"; \
+	git tag $$tag
+	git push --tags
