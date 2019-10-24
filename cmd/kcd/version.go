@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "snapshot"
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "show KubeCD version and exit",

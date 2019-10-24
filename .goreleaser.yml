@@ -6,7 +6,7 @@ builds:
     hooks:
       pre: go mod download
     ldflags:
-      - -s -w -X main.build={{.Version}}
+      - -s -w -X main.version={{.Version}}
     goos:
       - linux
       - darwin

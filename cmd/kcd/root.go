@@ -32,7 +32,6 @@ var cfgFile string
 
 var environmentsFile string
 var verbosity int
-var version = "snapshot"
 
 type NotYetImplementedError string
 
