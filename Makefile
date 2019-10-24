@@ -1,9 +1,8 @@
 KCD_IMAGE=zedge/kubecd
 KCD_IMAGE_TAG=latest
 
-.PHONY: all build image image-push clean test release upload
-
-all: build
+.PHONY: all build image image-push clean test fmt
+.DEFAULT: build
 
 build:
 	go build ./cmd/kcd
@@ -17,8 +16,14 @@ image-push: image
 clean:
 	go clean ./...
 
-test:
-	test -z `gofmt -s -l cmd pkg`
+fmt:
+	@if ! test -z `gofmt -s -l cmd pkg`; then \
+	  echo "gofmt failed, please fix by running:"; \
+	  echo "gofmt -w "`gofmt -s -l cmd pkg`; \
+	  exit 1; \
+	fi >&2
+
+test: fmt
 	go vet ./...
 	go test ./...
 
