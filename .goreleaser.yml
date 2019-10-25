@@ -1,6 +1,6 @@
 project_name: kubecd
 builds:
-  - id: default
+  - id: kcd
     main: ./cmd/kcd
     binary: kcd
     hooks:
@@ -18,6 +18,22 @@ builds:
         goarch: arm64
     env:
       - CGO_ENABLED=0
+dockers:
+  - goos: linux
+    goarch: amd64
+    binaries:
+      - kcd
+    image_templates:
+      - "zedge/kubecd:latest"
+      - "zedge/kubecd:{{ .Version }}"
+      - "zedge/kubecd:{{ .Major }}.{{ .Minor }}"
+      - "zedge/kubecd:{{ .Major }}"
+    build_flag_templates:
+      - "--label=org.label-schema.schema-version=1.0"
+      - "--label=org.label-schema.version={{.Version}}"
+      - "--label=org.label-schema.name={{.ProjectName}}"
+    skip_push: false
+    dockerfile: Dockerfile
 archives:
   - id: default
     format: tar.gz
