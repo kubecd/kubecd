@@ -3,8 +3,10 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 
+	"github.com/buildkite/interpolate"
 	"github.com/ghodss/yaml"
 )
 
@@ -33,6 +35,28 @@ type HelmRepo struct {
 	CAFile   string `json:"caFile,omitempty"`
 	CertFile string `json:"certFile,omitempty"`
 	KeyFile  string `json:"keyFile,omitempty"`
+}
+
+func interpolateValue(val string) string {
+	env := interpolate.NewSliceEnv(os.Environ())
+	output, err := interpolate.Interpolate(env, val)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "invalid interpolation: %v\n", err)
+		return val
+	}
+	return output
+}
+
+func (r HelmRepo) GetCAFile() string {
+	return interpolateValue(r.CAFile)
+}
+
+func (r HelmRepo) GetCertFile() string {
+	return interpolateValue(r.CertFile)
+}
+
+func (r HelmRepo) GetKeyFile() string {
+	return interpolateValue(r.KeyFile)
 }
 
 func (is *FlexString) UnmarshalJSON(data []byte) error {

@@ -70,7 +70,17 @@ func InspectChart(chartReference, chartVersion string) ([]byte, error) {
 func RepoSetupCommands(repos []model.HelmRepo) [][]string {
 	var cmds [][]string
 	for _, repo := range repos {
-		cmds = append(cmds, []string{"helm", "repo", "add", repo.Name, repo.URL})
+		addCmd := []string{"helm", "repo", "add", repo.Name, repo.URL}
+		if caFile := repo.GetCAFile(); caFile != "" {
+			addCmd = append(addCmd, "--ca-file", caFile)
+		}
+		if certFile := repo.GetCertFile(); certFile != "" {
+			addCmd = append(addCmd, "--cert-file", certFile)
+		}
+		if keyFile := repo.GetKeyFile(); keyFile != "" {
+			addCmd = append(addCmd, "--key-file", keyFile)
+		}
+		cmds = append(cmds, addCmd)
 	}
 	cmds = append(cmds, []string{"helm", "repo", "update"})
 	return cmds
