@@ -7,7 +7,7 @@ RUN cd /src; CGO_ENABLED=0 make build
 # Grab binary from build step and install in a clean Python image,
 # along with kubectl, helm, gcloud, ssh and git
 FROM debian:buster
-ARG KUBECTL_VERSION=1.16.1
+ARG KUBECTL_VERSION=1.16.2
 ARG HELM_VERSION=2.9.1
 ARG GCLOUD_VERSION=268.0.0
 COPY --from=build /src/kcd /usr/local/bin/kcd
