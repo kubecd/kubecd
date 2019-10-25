@@ -1,5 +1,5 @@
 # Generate Thrift sources
-FROM golang:1.12 AS build
+FROM golang:1.13 AS build
 RUN mkdir /src
 COPY . /src/
 RUN cd /src; CGO_ENABLED=0 go build ./cmd/kcd
@@ -7,9 +7,9 @@ RUN cd /src; CGO_ENABLED=0 go build ./cmd/kcd
 # Grab binary from build step and install in a clean Python image,
 # along with kubectl, helm, gcloud, ssh and git
 FROM debian:buster
-ARG KUBECTL_VERSION=1.13.7
+ARG KUBECTL_VERSION=1.16.1
 ARG HELM_VERSION=2.9.1
-ARG GCLOUD_VERSION=258.0.0
+ARG GCLOUD_VERSION=268.0.0
 COPY --from=build /src/kcd /usr/local/bin/kcd
 RUN apt-get update && apt-get install -y openssh-client git procps curl && apt-get clean
 RUN curl -Ls https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl \
