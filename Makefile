@@ -5,7 +5,7 @@ KCD_IMAGE_TAG=latest
 .DEFAULT: build
 
 build:
-	go build ./cmd/kcd
+	go build -ldflags "-w -s -X main.version=$$(git describe --tags)" ./cmd/kcd
 
 image:
 	docker build -t $(KCD_IMAGE):$(KCD_IMAGE_TAG) .
