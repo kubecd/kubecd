@@ -39,3 +39,4 @@ release: clean-workspace
 	echo "Next tag: $$tag"; \
 	git tag $$tag
 	git push --tags
+	git push
