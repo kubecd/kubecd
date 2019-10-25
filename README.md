@@ -1,6 +1,8 @@
 # Kubernetes Continuous Deployment Tool
 
+![](https://github.com/zedge/kubecd/workflows/test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zedge/kubecd)](https://goreportcard.com/report/github.com/zedge/kubecd)
+![](https://img.shields.io/github/v/release/zedge/kubecd.svg)
 
 `kubecd` is a deployment tool for Kubernetes that lets you declare in Git what should be deployed in all your
 environments, manage image upgrade strategies per service, and make it so. It supports any Kubernetes installation
