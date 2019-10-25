@@ -39,5 +39,5 @@ release:
   github:
     owner: zedge
     name: kubecd
-  draft: true
+  draft: false
   disable: false
