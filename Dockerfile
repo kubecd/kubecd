@@ -2,7 +2,7 @@
 FROM golang:1.13 AS build
 RUN mkdir /src
 COPY . /src/
-RUN cd /src; CGO_ENABLED=0 go build ./cmd/kcd
+RUN cd /src; CGO_ENABLED=0 go build -ldflags "-w -s -X main.version=$(git describe --tags)" ./cmd/kcd
 
 # Grab binary from build step and install in a clean Python image,
 # along with kubectl, helm, gcloud, ssh and git
