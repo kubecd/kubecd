@@ -57,3 +57,25 @@ release:
     name: kubecd
   draft: false
   disable: false
+brews:
+  - github:
+      owner: kubecd
+      name: homebrew-kubecd
+    commit_author:
+      name: goreleaserbot
+      email: kubecd@stigbakken.com
+    folder: Formula
+    homepage: "https://github.com/zedge/kubecd/"
+    description: "Kubernetes GitOps deployment tool"
+    dependencies:
+      - kubernetes-cli
+      - kubernetes-helm
+    test: |
+      system "#{bin}/kcd version"
+    install:
+      bin.install "kcd"
+#
+#    # Custom install script for brew.
+#    # Default is 'bin.install "program"'.
+#    install: |
+#      bin.install "kcd"
