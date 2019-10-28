@@ -74,8 +74,13 @@ brews:
       system "#{bin}/kcd version"
     install:
       bin.install "kcd"
-#
-#    # Custom install script for brew.
-#    # Default is 'bin.install "program"'.
-#    install: |
-#      bin.install "kcd"
+nfpms:
+  - builds:
+      - kcd
+    homepage: https://github.com/zedge/kubecd/
+    maintainer: Stig Bakken <stig@stigbakken.com>
+    description: "Kubernetes GitOps deployment tool"
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
