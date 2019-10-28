@@ -69,7 +69,6 @@ brews:
     description: "Kubernetes GitOps deployment tool"
     dependencies:
       - kubernetes-cli
-      - kubernetes-helm
     test: |
       system "#{bin}/kcd version"
     install:
