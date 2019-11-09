@@ -40,9 +40,6 @@ func NewConfig(reader io.Reader, fromFile string) (*KubeCDConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshaling Release from %s: %v", fromFile, err)
 	}
-	if errs := config.sanityCheck(); errs != nil {
-		return nil, AggregateError{Errors: errs}
-	}
 	for _, env := range config.Environments {
 		env.Cluster = config.GetCluster(env.ClusterName)
 		env.fromFile = fromFile
@@ -53,6 +50,9 @@ func NewConfig(reader io.Reader, fromFile string) (*KubeCDConfig, error) {
 			return nil, err
 		}
 	}
+	if errs := config.sanityCheck(); errs != nil {
+		return nil, NewAggregateError(errs)
+	}
 	return config, nil
 }
 
@@ -61,7 +61,7 @@ func (k *KubeCDConfig) sanityCheck() []error {
 	seenCluster := make(map[string]bool)
 	for _, cluster := range k.Clusters {
 		if _, seen := seenCluster[cluster.Name]; seen {
-			issues = append(issues, fmt.Errorf(`duplicate Cluster name: %q`, cluster.Name))
+			issues = append(issues, fmt.Errorf(`duplicate cluster name: %q`, cluster.Name))
 		}
 		seenCluster[cluster.Name] = true
 		for _, issue := range cluster.sanityCheck() {
@@ -73,9 +73,8 @@ func (k *KubeCDConfig) sanityCheck() []error {
 		if _, seen := seenEnv[env.Name]; seen {
 			issues = append(issues, fmt.Errorf(`duplicate environment name: %q`, env.Name))
 		}
-		for _, issue := range env.sanityCheck() {
-			issues = append(issues, issue)
-		}
+		seenEnv[env.Name] = true
+		issues = append(issues, env.sanityCheck()...)
 	}
 	seenHelmRepo := make(map[string]bool)
 	for _, repo := range k.HelmRepos {

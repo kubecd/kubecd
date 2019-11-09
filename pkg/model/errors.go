@@ -1,6 +1,8 @@
 package model
 
-import "fmt"
+import (
+	"strings"
+)
 
 type AggregateError struct {
 	Errors []error
@@ -11,7 +13,11 @@ func NewAggregateError(errors []error) *AggregateError {
 }
 
 func (a AggregateError) Error() string {
-	return fmt.Sprintf("[%v]", a.Errors)
+	strs := make([]string, len(a.Errors))
+	for i := range a.Errors {
+		strs[i] = a.Errors[i].Error()
+	}
+	return strings.Join(strs, "\n\t")
 }
 
 var _ error = AggregateError{}
