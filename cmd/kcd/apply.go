@@ -17,10 +17,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"github.com/kubecd/kubecd/pkg/helm"
 	"github.com/kubecd/kubecd/pkg/model"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 var applyReleases []string

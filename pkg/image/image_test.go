@@ -1,10 +1,10 @@
 package image
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/kubecd/kubecd/pkg/exec"
 	"github.com/kubecd/kubecd/pkg/semver"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"strconv"
 	"testing"

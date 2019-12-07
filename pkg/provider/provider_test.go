@@ -1,8 +1,8 @@
 package provider
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/kubecd/kubecd/pkg/model"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
