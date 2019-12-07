@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"github.com/zedge/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/model"
 )
 
 type DockerForDesktopClusterProvider struct{ baseClusterProvider }

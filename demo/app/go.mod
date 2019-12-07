@@ -1,3 +1,3 @@
-module github.com/zedge/kubecd/demo/app
+module github.com/kubecd/kubecd/demo/app
 
 go 1.12

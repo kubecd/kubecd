@@ -18,7 +18,7 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/zedge/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/model"
 )
 
 // listCmd represents the list command

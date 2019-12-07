@@ -18,9 +18,9 @@ package main
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/zedge/kubecd/pkg/helm"
-	"github.com/zedge/kubecd/pkg/model"
-	"github.com/zedge/kubecd/pkg/provider"
+	"github.com/kubecd/kubecd/pkg/helm"
+	"github.com/kubecd/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/provider"
 )
 
 var initCluster string

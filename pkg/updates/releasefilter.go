@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zedge/kubecd/pkg/helm"
-	"github.com/zedge/kubecd/pkg/image"
-	"github.com/zedge/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/helm"
+	"github.com/kubecd/kubecd/pkg/image"
+	"github.com/kubecd/kubecd/pkg/model"
 )
 
 func ClusterReleaseFilter(clusterName string) ReleaseFilterFunc {

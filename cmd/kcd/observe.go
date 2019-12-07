@@ -23,9 +23,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/zedge/kubecd/pkg/image"
-	"github.com/zedge/kubecd/pkg/model"
-	"github.com/zedge/kubecd/pkg/updates"
+	"github.com/kubecd/kubecd/pkg/image"
+	"github.com/kubecd/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/updates"
 )
 
 var (

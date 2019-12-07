@@ -100,7 +100,7 @@ deployed into the environment. This can be used to simplify deploying the same c
 environments.
 
 The full schema for this file can be found in the `KubeCDConfig` struct in
-[`kubecd.thrift`](idl/github.com/zedge/kubecd/kubecd.thrift).
+[`pkg/model/model.go`](pkg/model/model.go).
 
 ## Releases
 

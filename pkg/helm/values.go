@@ -13,10 +13,10 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/zedge/kubecd/pkg/image"
+	"github.com/kubecd/kubecd/pkg/image"
 
-	"github.com/zedge/kubecd/pkg/exec"
-	"github.com/zedge/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/exec"
+	"github.com/kubecd/kubecd/pkg/model"
 )
 
 var runner exec.Runner = exec.RealRunner{}

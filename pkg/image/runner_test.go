@@ -1,7 +1,7 @@
 package image
 
 import (
-	"github.com/zedge/kubecd/pkg/exec"
+	"github.com/kubecd/kubecd/pkg/exec"
 	"testing"
 )
 

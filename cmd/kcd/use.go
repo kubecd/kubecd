@@ -18,8 +18,8 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/zedge/kubecd/pkg/helm"
-	"github.com/zedge/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/helm"
+	"github.com/kubecd/kubecd/pkg/model"
 )
 
 var useDryRun bool

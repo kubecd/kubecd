@@ -5,7 +5,7 @@ import (
 	"fmt"
 	mmsemver "github.com/Masterminds/semver"
 	registry2 "github.com/heroku/docker-registry-client/registry"
-	"github.com/zedge/kubecd/pkg/semver"
+	"github.com/kubecd/kubecd/pkg/semver"
 	"strings"
 	"time"
 )

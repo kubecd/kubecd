@@ -2,9 +2,9 @@ package updates
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/zedge/kubecd/pkg/image"
-	"github.com/zedge/kubecd/pkg/model"
-	"github.com/zedge/kubecd/pkg/semver"
+	"github.com/kubecd/kubecd/pkg/image"
+	"github.com/kubecd/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/semver"
 	"testing"
 )
 

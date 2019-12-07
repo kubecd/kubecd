@@ -1,4 +1,4 @@
-module github.com/zedge/kubecd
+module github.com/kubecd/kubecd
 
 go 1.12
 

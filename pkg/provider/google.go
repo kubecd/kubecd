@@ -2,7 +2,7 @@ package provider
 
 import (
 	"fmt"
-	"github.com/zedge/kubecd/pkg/model"
+	"github.com/kubecd/kubecd/pkg/model"
 )
 
 type GkeClusterProvider struct{ baseClusterProvider }
