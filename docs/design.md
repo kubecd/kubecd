@@ -297,62 +297,11 @@ workloads, as seen in the `kafka` example above.
 KubeCD can be hooked up with registry webhooks (or Google Cloud PubSub for GCR) to automatically
 discover new image tags and patch releases.
 
-Auto-patching needs to be done in a way that preserves comments and field order, for example using
-[`ruamel.yaml`](http://yaml.readthedocs.io/en/latest/overview.html) in Python.
+Auto-patching is done in a way that preserves comments and field
+order, but may reindent the yaml. To prevent noisy whitespace changes
+in upgrade commits, canonically indent files with `kcd indent` and
+commit whitespace-only changes.
 
-## Apply Agent
-
-The "apply agent" is a controller loop running in each cluster/environment.
-It will do an "apply" of the entire environment either at a fixed schedule (for example every 5 minutes),
-triggered by events or both.
-
-## Roadmap
-
-The system should be implemented in stages. Here's a proposal, focusing on getting something up and running
-quickly and then automating, optimizing and securing the system over time:
-
-1. "Apply" stage: developers run an "apply" command manually, using their own Kubernetes credentials. This is
-   still a fairly manual process, but still a big improvement over what we have today, especially for IT.
-2. "Apply from cron" stage: using a service account, automatically run (1) every 1-5 minutes. All changes
-   are still made manually.
-3. "Upgrade check" stage: the upgrade checks are implemented, but auto-patching is not implemented. 
-   Developers would manually patch image tag values based on the upgrade check output.
-4. "Auto upgrade" stage: implement the CI job creating PRs based on upgrade check changes. Will need
-   a GitHub bot to implement per-environment access control if we go for one big deployments repo.
-5. "Cluster agent" stage: implement the agent/operator running within each cluster or environment,
-   pulling the deployments repo and applying changes. At this point we will no longer need a super
-   cron job with credentials for every cluster, which is better for both maintenance and security.
-6. "Webhook all the things" stage: convert image tag polling to using webhooks or pubsub, to
-   speed up deployments and reduce overhead. Also convert cluster agents to use webhooks instead
-   of polling.
-
-
-## TODO
-
-Things we have not covered yet, but will get to eventually:
-
-### TODO: Secrets
-
-We still don't have a solution for automatically making secrets from Vault available to Kubernetes apps.
-
-One approach we could explore is to declare a way of populating Kubernetes secrets from Vault in this system,
-keeping the secrets themselves out of the `deployments.git` repo, using Vault path references instead.
-
-### TODO: Config
-
-Config that is maintained separately from the applications needs to be projected into the deployments repo
-somehow. Could be as simple as automated commits into the deployments repo.
-
-### TODO: Provisioning integration
-
-The `environments.yaml` file refers to cloud resources, but we have not defined how these are created.
-This is already a solved problem, using tools like Terraform, but we may want to integrate better with
-these tools.
-
-### TODO: Blue/Green / Staged / Canary Rollouts
-
-The proposed solution has no built-in mechanisms for blue/green or canary rollouts.
-This should probably be considered separately, after we have the basic CD mechanisms in place.
 
 ## References
 
@@ -380,8 +329,7 @@ Helm uses
 [go templates](https://github.com/kubernetes/helm/blob/master/docs/charts.md#templates-and-values)
 on top of Kubernetes YAML resource files. Using templates with a
 whitespace-sensitive format like YAML can be tricky, and something
-we should not burden every developer to have to deal with. (A notable tool to keep an eye on
-in this space is [ksonnet](https://github.com/ksonnet/ksonnet).)
+we should not burden every developer to have to deal with.
 
 Helm's general solution to this is to offer "values" that the user can
 customize, through an arbitrary YAML schema defined in each chart's
@@ -392,9 +340,5 @@ customize, through an arbitrary YAML schema defined in each chart's
  * https://github.com/weaveworks/flux
  * https://coreos.com/blog/introducing-operators.html
  * https://github.com/GoogleCloudPlatform/skaffold
- * https://github.com/keel-hq/keel - implements continuous deployments, but lacks a mechanism
-   for re-creating a cluster
  * https://github.com/GoogleCloudPlatform/continuous-deployment-on-kubernetes
  * https://github.com/kelseyhightower/pipeline
- * https://github.com/ksonnet/ksonnet
- 
