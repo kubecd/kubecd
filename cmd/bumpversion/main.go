@@ -27,7 +27,7 @@ import (
 	. "github.com/bitfield/script"
 )
 
-var remotesRegexp = regexp.MustCompile(`([a-z0-9A-Z_.-]+)\t.*github.com[/:]zedge/kubecd.*\(fetch\)`)
+var remotesRegexp = regexp.MustCompile(`([a-z0-9A-Z_.-]+)\t.*github\.com[/:]kubecd/kubecd.*\(fetch\)`)
 var lsRemoteRegexp = regexp.MustCompile(`.*/v`)
 
 type bumpMode string

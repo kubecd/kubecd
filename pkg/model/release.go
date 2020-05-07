@@ -109,16 +109,6 @@ func (r *Release) AbsPath(path string) string {
 	return ResolvePathFromFile(path, r.FromFile)
 }
 
-func (l *ReleaseList) sanityCheck() []error {
-	var issues []error
-	for _, rel := range l.Releases {
-		for _, issue := range rel.sanityCheck() {
-			issues = append(issues, issue)
-		}
-	}
-	return issues
-}
-
 func (r *Release) UnmarshalJSON(data []byte) error {
 	type release Release
 	if err := json.Unmarshal(data, (*release)(r)); err != nil {

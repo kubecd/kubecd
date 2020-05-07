@@ -67,30 +67,25 @@ func commandsToApply(envsToApply []*model.Environment) ([][]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			for _, cmd := range initCmds {
-				commandsToRun = append(commandsToRun, cmd)
-			}
+			commandsToRun = append(commandsToRun, initCmds...)
 		}
 		deployCmds, err := helm.DeployCommands(env, applyDryRun, applyDebug, applyReleases)
 		if err != nil {
 			return nil, err
 		}
-		for _, cmd := range deployCmds {
-			commandsToRun = append(commandsToRun, cmd)
-		}
+		commandsToRun = append(commandsToRun, deployCmds...)
 	}
 	return commandsToRun, nil
 }
 
 func environmentsFromArgs(kcdConfig *model.KubeCDConfig, cluster string, args []string) ([]*model.Environment, error) {
 	if len(args) > 0 {
-		for _, envName := range args {
-			env := kcdConfig.GetEnvironment(envName)
-			if env == nil {
-				return nil, fmt.Errorf(`unknown environment: %q`, envName)
-			}
-			return []*model.Environment{env}, nil
+		envName := args[0]
+		env := kcdConfig.GetEnvironment(envName)
+		if env == nil {
+			return nil, fmt.Errorf(`unknown environment: %q`, envName)
 		}
+		return []*model.Environment{env}, nil
 	}
 	if cluster == "" {
 		return nil, errors.New(`specify --cluster flag or ENV arg`)

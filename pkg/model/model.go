@@ -81,9 +81,7 @@ func (k *KubeCDConfig) sanityCheck() []error {
 			issues = append(issues, fmt.Errorf(`duplicate cluster name: %q`, cluster.Name))
 		}
 		seenCluster[cluster.Name] = true
-		for _, issue := range cluster.sanityCheck() {
-			issues = append(issues, issue)
-		}
+		issues = append(issues, cluster.sanityCheck()...)
 	}
 	seenEnv := make(map[string]bool)
 	for _, env := range k.Environments {

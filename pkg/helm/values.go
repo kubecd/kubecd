@@ -49,9 +49,6 @@ func inspectCacheDir() string {
 
 func pathExists(path string) bool {
 	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return true
-		}
 		return false
 	}
 	return true
@@ -60,8 +57,8 @@ func pathExists(path string) bool {
 // InspectChart :
 func InspectChart(chartReference, chartVersion string) ([]byte, error) {
 	h := sha1.New()
-	h.Write([]byte(chartReference))
-	h.Write([]byte(chartVersion))
+	_, _ = h.Write([]byte(chartReference))
+	_, _ = h.Write([]byte(chartVersion))
 	chartHash := fmt.Sprintf("%x", h.Sum(nil))
 	cacheDir := inspectCacheDir()
 	cacheFile := filepath.Join(cacheDir, chartHash)
@@ -180,12 +177,12 @@ func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]str
 				commands = append(commands, tmp...)
 			} else if release.ResourceFiles != nil {
 				for _, resourceFile := range release.ResourceFiles {
-					commands = append(commands, []string{"echo", "---"})
-					commands = append(commands, []string{"echo", "#", "Source:", model.ResolvePathFromFile(resourceFile, relFile)})
-					commands = append(commands, []string{"cat", model.ResolvePathFromFile(resourceFile, relFile)})
-					commands = append(commands, []string{"echo", "---"})
+					commands = append(commands,
+						[]string{"echo", "---"},
+						[]string{"echo", "#", "Source:", model.ResolvePathFromFile(resourceFile, relFile)},
+						[]string{"cat", model.ResolvePathFromFile(resourceFile, relFile)},
+						[]string{"echo", "---"})
 				}
-
 			}
 		}
 	}
@@ -270,10 +267,8 @@ func GenerateTemplateCommands(rel *model.Release, env *model.Environment) ([][]s
 		version := *rel.Chart.Version
 		tmpDir = path.Join(os.TempDir(), fmt.Sprintf("kcd-template.%d", os.Getpid()))
 		// Make a copy of Release.Chart so we can modify it
-		var relCopy model.Release
-		relCopy = *rel
-		var chartCopy model.Chart
-		chartCopy = *rel.Chart
+		var relCopy = *rel
+		var chartCopy = *rel.Chart
 		chartCopy.Reference = nil
 		chartCopy.Version = nil
 		// Assumes that "helm fetch --untar" always uses the chart/reference name as the directory
@@ -281,8 +276,9 @@ func GenerateTemplateCommands(rel *model.Release, env *model.Environment) ([][]s
 		chartCopy.Dir = &newDir
 		relCopy.Chart = &chartCopy
 		rel = &relCopy
-		commands = append(commands, []string{"mkdir", "-m", "700", "-p", tmpDir})
-		commands = append(commands, []string{"helm", "fetch", reference, "--version", version, "--untar", "--untardir", tmpDir})
+		commands = append(commands,
+			[]string{"mkdir", "-m", "700", "-p", tmpDir},
+			[]string{"helm", "fetch", reference, "--version", version, "--untar", "--untardir", tmpDir})
 	}
 	chartArgs, err := GenerateHelmChartArgs(rel)
 	var valueArgs []string
@@ -369,7 +365,7 @@ func ResolveGceAddressValue(address *model.GceAddressValueRef, env *model.Enviro
 	return strings.TrimSpace(string(out)), nil
 }
 
-func MergeValues(from map[string]interface{}, onto map[string]interface{}) map[string]interface{} {
+func MergeValues(from, onto map[string]interface{}) map[string]interface{} {
 	result := onto
 	for key, value := range from {
 		_, newValueIsMap := value.(map[string]interface{})

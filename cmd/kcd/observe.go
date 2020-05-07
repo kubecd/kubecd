@@ -103,10 +103,7 @@ func observeImageTag(kcdConfig *model.KubeCDConfig, cmd *cobra.Command, args []s
 		fmt.Printf("No matching release found for image %s.\n", observeImage)
 		return nil
 	}
-	if err = patchReleasesFilesMaybe(allUpdates, observePatch); err != nil {
-		return err
-	}
-	return nil
+	return patchReleasesFilesMaybe(allUpdates, observePatch)
 }
 
 func makeObserveReleaseFilters(args []string) []updates.ReleaseFilterFunc {

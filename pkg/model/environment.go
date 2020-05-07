@@ -76,6 +76,7 @@ func (e *Environment) sanityCheck() []error {
 			issues = append(issues, fmt.Errorf(`duplicate release %q in environment %q`, rel.Name, e.Name))
 		}
 		seenRelease[rel.Name] = true
+		issues = append(issues, rel.sanityCheck()...)
 	}
 	return issues
 }

@@ -31,18 +31,16 @@ type Cluster struct {
 	Name       string             `json:"name"`
 	Provider   Provider           `json:"provider"`
 	Parameters []ClusterParameter `json:"parameters"`
-
-	fromFile string
 }
 
 type GceAddressValueRef struct {
-	Name     string      `json:"name,optional"`
-	NameFrom NameFromRef `json:"nameFrom,optional"`
-	IsGlobal bool        `json:"isGlobal,optional"` // if false, use zone/region from Cluster
+	Name     string      `json:"name,omitempty"`
+	NameFrom NameFromRef `json:"nameFrom,omitempty"`
+	IsGlobal bool        `json:"isGlobal,omitempty"` // if false, use zone/region from Cluster
 }
 
 type GceValueRef struct {
-	Address *GceAddressValueRef `json:"address,optional"`
+	Address *GceAddressValueRef `json:"address,omitempty"`
 }
 
 func (c *Cluster) sanityCheck() []error {
@@ -50,9 +48,7 @@ func (c *Cluster) sanityCheck() []error {
 	providers := 0
 	if c.Provider.GKE != nil {
 		providers++
-		for _, issue := range c.Provider.GKE.sanityCheck() {
-			issues = append(issues, issue)
-		}
+		issues = append(issues, c.Provider.GKE.sanityCheck()...)
 	}
 	if c.Provider.Minikube != nil {
 		providers++

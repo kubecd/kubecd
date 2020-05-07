@@ -27,8 +27,8 @@ func TestDuplicateReleaseNames(t *testing.T) {
 	env := Environment{
 		Name: "foo",
 		Releases: []*Release{
-			{Name: "a", ResourceFiles: []string{}},
-			{Name: "a", ResourceFiles: []string{}},
+			{Name: "a", ResourceFiles: []string{"foo.yaml"}},
+			{Name: "a", ResourceFiles: []string{"foo.yaml"}},
 		},
 	}
 	issues := env.sanityCheck()

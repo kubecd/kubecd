@@ -65,17 +65,13 @@ func commandsToRender(envsToApply []*model.Environment) ([][]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			for _, cmd := range initCmds {
-				commandsToRun = append(commandsToRun, cmd)
-			}
+			commandsToRun = append(commandsToRun, initCmds...)
 		}
 		deployCmds, err := helm.TemplateCommands(env, renderReleases)
 		if err != nil {
 			return nil, err
 		}
-		for _, cmd := range deployCmds {
-			commandsToRun = append(commandsToRun, cmd)
-		}
+		commandsToRun = append(commandsToRun, deployCmds...)
 	}
 	return commandsToRun, nil
 }

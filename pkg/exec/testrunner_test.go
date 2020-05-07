@@ -32,7 +32,7 @@ func TestTestRunner(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, string(output))
 	runner = TestRunner{ExitCode: 42}
-	output, err = runner.Run("command")
+	_, err = runner.Run("command")
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "exit status 42")
 	runner = TestRunner{ExpectedCommand: []string{"foo", "bar"}}

@@ -28,7 +28,7 @@ import (
 )
 
 type ChartValueRef struct {
-	GceResource *GceValueRef `json:"gceResource,optional"`
+	GceResource *GceValueRef `json:"gceResource,omitempty"`
 }
 
 type FlexString string

@@ -66,10 +66,7 @@ var pollCmd = &cobra.Command{
 			fmt.Println("No updates found.")
 			return nil
 		}
-		if err = patchReleasesFilesMaybe(allUpdates, pollPatch); err != nil {
-			return err
-		}
-		return nil
+		return patchReleasesFilesMaybe(allUpdates, pollPatch)
 	},
 }
 
