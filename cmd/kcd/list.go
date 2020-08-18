@@ -22,6 +22,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var listLongDetails bool
+
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:       "list {env,release,cluster}",
@@ -42,7 +44,11 @@ var listCmd = &cobra.Command{
 		case "release", "releases":
 			for _, env := range kcdConfig.Environments {
 				for _, release := range env.AllReleases() {
-					fmt.Printf("%s -r %s\n", env.Name, release.Name)
+					fmt.Printf("%s -r %s", env.Name, release.Name)
+					if listLongDetails {
+						fmt.Printf(" ( %s )", release.FromFile)
+					}
+					fmt.Println()
 				}
 			}
 		case "cluster", "clusters":
@@ -56,6 +62,8 @@ var listCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(listCmd)
+
+	listCmd.Flags().BoolVarP(&listLongDetails, "long-details", "l", false, "Enable to get extra details (debugging)")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
