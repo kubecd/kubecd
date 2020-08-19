@@ -53,7 +53,7 @@ changelog:
     - '^CI:'
 release:
   github:
-    owner: zedge
+    owner: kubecd
     name: kubecd
   draft: false
   disable: false
@@ -65,7 +65,7 @@ brews:
       name: goreleaserbot
       email: kubecd@stigbakken.com
     folder: Formula
-    homepage: "https://github.com/zedge/kubecd/"
+    homepage: "https://github.com/kubecd/kubecd/"
     description: "Kubernetes GitOps deployment tool"
     dependencies:
       - kubernetes-cli
@@ -76,7 +76,7 @@ brews:
 nfpms:
   - builds:
       - kcd
-    homepage: https://github.com/zedge/kubecd/
+    homepage: https://github.com/kubecd/kubecd/
     maintainer: Stig Bakken <stig@stigbakken.com>
     description: "Kubernetes GitOps deployment tool"
     license: Apache 2.0
