@@ -18,11 +18,13 @@
 package helm
 
 import (
+	"fmt"
 	"github.com/kubecd/kubecd/pkg/exec"
 	"github.com/kubecd/kubecd/pkg/image"
 	"github.com/kubecd/kubecd/pkg/model"
 	"github.com/kubecd/kubecd/pkg/semver"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -177,4 +179,39 @@ func TestGetImageRepoFromImageTrigger(t *testing.T) {
 	}
 	assert.Equal(t, image.DefaultDockerRegistry+"/test-image", GetImageRefFromImageTrigger(trigger, valuesWithoutPrefix).WithoutTag())
 	assert.Equal(t, "example.io/test-image", GetImageRefFromImageTrigger(trigger, valuesWithPrefix).WithoutTag())
+}
+
+func TestGenerateTemplateCommands(t *testing.T) {
+	chartRef := "stable/cert-manager"
+	chartVer := "v0.5.1"
+	valuesFile := "values-certmanager.yaml"
+	releaseFile := "/tmp/releases.yaml"
+	expectedValuesFile := "/tmp/" + valuesFile
+	releaseName := "cert-manager"
+	envName := "kube-system"
+	envNamespace := "kube-system"
+	release := &model.Release{
+		Name: releaseName,
+		Chart: &model.Chart{
+			Reference: &chartRef,
+			Version:   &chartVer,
+		},
+		ValuesFile: &valuesFile,
+		Triggers: []model.ReleaseUpdateTrigger{
+			{Chart: &model.HelmTrigger{Track: semver.TrackMinorVersion}},
+		},
+		FromFile: releaseFile,
+	}
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+	}
+
+	tmpDir := fmt.Sprintf("/tmp/kcd-template.%d", os.Getpid())
+
+	t.Run("generate template commands", func(t *testing.T) {
+		cmds, err := GenerateTemplateCommands(release, env)
+		assert.NoError(t, err)
+		assert.Equal(t, [][]string{{"mkdir", "-m", "700", "-p", tmpDir}, {"helm", "fetch", chartRef, "--version", chartVer, "--untar", "--untardir", tmpDir}, {"helm", "--kube-context", "env:" + envName, "template", tmpDir + "/" + releaseName, "-n", releaseName, "--namespace", envNamespace, "--values", expectedValuesFile}, {"rm", "-rf", tmpDir}}, cmds)
+	})
 }

@@ -235,7 +235,7 @@ func GenerateHelmValuesArgv(rel *model.Release, env *model.Environment) ([]strin
 func GenerateHelmChartArgs(rel *model.Release) ([]string, error) {
 	if rel.Chart.Reference == nil {
 		chartDir := rel.AbsPath(*rel.Chart.Dir)
-		if !pathExists(chartDir) {
+		if !pathExists(chartDir) && !strings.Contains(chartDir, fmt.Sprintf("kcd-template.%d", os.Getpid())) {
 			return []string{}, fmt.Errorf(`%s: release %q chart.dir %q does not exist`, rel.FromFile, rel.Name, chartDir)
 		}
 		return []string{chartDir}, nil
