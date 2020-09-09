@@ -68,9 +68,9 @@ func (r HelmVersion) GetMajorVersion() int {
 	var out []byte
 	var err error
 
-	out, err = execCommand(r.Path, "version", "--short").Output()
+	out, err = execCommand(r.Path, "version", "--short", "--client").Output()
 	if err != nil {
-		fmt.Printf("could not parse majorVersion from executing %s version --short\n", r.Path)
+		fmt.Printf("could not parse majorVersion from executing %s version --short --client\n", r.Path)
 		println(err.Error())
 		os.Exit(1)
 		return -1
@@ -83,7 +83,7 @@ func (r HelmVersion) GetMajorVersion() int {
 			return majorVersion
 		}
 	}
-	fmt.Printf("could not parse majorVersion from executing %s version --short\n", r.Path)
+	fmt.Printf("could not parse majorVersion from executing %s version --short --client\n", r.Path)
 	println(err.Error())
 	os.Exit(1)
 	return -1
