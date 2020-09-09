@@ -9,7 +9,8 @@ clusters:
         project: kubecd-demo
         clusterName: demo-cluster
         zone: europe-north1-a
-
+defaultHelmVersion:
+  path: helm
 environments:
   - name: kube-system
     clusterName: demo-cluster

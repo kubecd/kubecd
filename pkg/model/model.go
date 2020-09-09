@@ -34,6 +34,7 @@ type KubeCDConfig struct {
 	Clusters     []*Cluster     `json:"clusters"`
 	Environments []*Environment `json:"environments"`
 	HelmRepos    []HelmRepo     `json:"helmRepos,omitempty"`
+	HelmVersion  *HelmVersion   `json:"defaultHelmVersion,omitempty"`
 	KubeConfig   *string        `json:"kubeConfig,omitempty"`
 
 	fromFile string
@@ -57,9 +58,13 @@ func NewConfig(reader io.Reader, fromFile string) (*KubeCDConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshaling Release from %s: %v", fromFile, err)
 	}
+	if config.HelmVersion == nil {
+		config.HelmVersion = &HelmVersion{Path: "helm"} // default value for helm CLI.
+	}
 	for _, env := range config.Environments {
 		env.Cluster = config.GetCluster(env.ClusterName)
 		env.fromFile = fromFile
+		env.helmVersion = *config.HelmVersion
 		if env.Cluster == nil {
 			return nil, fmt.Errorf(`environment %q refers to undefined Cluster %q`, env.Name, env.ClusterName)
 		}

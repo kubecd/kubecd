@@ -189,8 +189,8 @@ func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]str
 	return commands, nil
 }
 
-func GenerateHelmBaseArgv(env *model.Environment) []string {
-	return []string{"helm", "--kube-context", model.KubeContextName(env.Name)}
+func GenerateHelmBaseArgv(env *model.Environment, helmPath string) []string {
+	return []string{helmPath, "--kube-context", model.KubeContextName(env.Name)}
 }
 
 func formatSetValuesString(values []model.ChartValue, env *model.Environment, skipValuesFrom bool) (string, error) {
@@ -244,7 +244,7 @@ func GenerateHelmChartArgs(rel *model.Release) ([]string, error) {
 }
 
 func GenerateHelmDiffArgv(rel *model.Release, env *model.Environment) ([]string, error) {
-	argv := GenerateHelmBaseArgv(env)
+	argv := GenerateHelmBaseArgv(env, rel.HelmVersion.Path)
 	argv = append(argv, "diff", "upgrade", rel.Name)
 	chartArgs, err := GenerateHelmChartArgs(rel)
 	if err != nil {
@@ -278,7 +278,7 @@ func GenerateTemplateCommands(rel *model.Release, env *model.Environment) ([][]s
 		rel = &relCopy
 		commands = append(commands,
 			[]string{"mkdir", "-m", "700", "-p", tmpDir},
-			[]string{"helm", "fetch", reference, "--version", version, "--untar", "--untardir", tmpDir})
+			[]string{rel.HelmVersion.Path, "fetch", reference, "--version", version, "--untar", "--untardir", tmpDir})
 	}
 	chartArgs, err := GenerateHelmChartArgs(rel)
 	var valueArgs []string
@@ -289,10 +289,14 @@ func GenerateTemplateCommands(rel *model.Release, env *model.Environment) ([][]s
 		return [][]string{}, err
 	}
 
-	templateArgv := GenerateHelmBaseArgv(env)
+	templateArgv := GenerateHelmBaseArgv(env, rel.HelmVersion.Path)
 	templateArgv = append(templateArgv, "template")
 	templateArgv = append(templateArgv, chartArgs...)
-	templateArgv = append(templateArgv, "-n", rel.Name, "--namespace", env.KubeNamespace)
+	releaseNameFlag := "-n"
+	if rel.HelmVersion.GetMajorVersion() > 2 {
+		releaseNameFlag = "--name-template"
+	}
+	templateArgv = append(templateArgv, releaseNameFlag, rel.Name, "--namespace", env.KubeNamespace)
 	templateArgv = append(templateArgv, valueArgs...)
 	commands = append(commands, templateArgv)
 
@@ -312,7 +316,7 @@ func GenerateHelmApplyArgv(rel *model.Release, env *model.Environment, dryRun, d
 	if err != nil {
 		return []string{}, err
 	}
-	argv := GenerateHelmBaseArgv(env)
+	argv := GenerateHelmBaseArgv(env, rel.HelmVersion.Path)
 	argv = append(argv, "upgrade", rel.Name)
 	argv = append(argv, chartArgs...)
 	argv = append(argv, "-i", "--namespace", env.KubeNamespace)

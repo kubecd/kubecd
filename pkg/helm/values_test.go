@@ -113,7 +113,8 @@ func TestGenerateHelmApplyArgv(t *testing.T) {
 		Triggers: []model.ReleaseUpdateTrigger{
 			{Chart: &model.HelmTrigger{Track: semver.TrackMinorVersion}},
 		},
-		FromFile: releaseFile,
+		FromFile:    releaseFile,
+		HelmVersion: &model.HelmVersion{Path: "helm"},
 	}
 	env := &model.Environment{
 		Name:          envName,

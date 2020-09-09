@@ -20,8 +20,11 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kubecd/kubecd/pkg/semver"
 	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/buildkite/interpolate"
 	"github.com/ghodss/yaml"
@@ -52,6 +55,38 @@ type HelmRepo struct {
 	CAFile   string `json:"caFile,omitempty"`
 	CertFile string `json:"certFile,omitempty"`
 	KeyFile  string `json:"keyFile,omitempty"`
+}
+
+type HelmVersion struct {
+	Path string `json:"path"`
+}
+
+var execCommand = exec.Command
+
+func (r HelmVersion) GetMajorVersion() int {
+	var majorVersion int
+	var out []byte
+	var err error
+
+	out, err = execCommand(r.Path, "version", "--short").Output()
+	if err != nil {
+		fmt.Printf("could not parse majorVersion from executing %s version --short\n", r.Path)
+		println(err.Error())
+		os.Exit(1)
+		return -1
+	}
+
+	versionString := semver.Normalize(string(out))
+	if idx := strings.IndexByte(versionString, '.'); idx >= 0 {
+		majorVersion, err = strconv.Atoi(versionString[:idx])
+		if err == nil {
+			return majorVersion
+		}
+	}
+	fmt.Printf("could not parse majorVersion from executing %s version --short\n", r.Path)
+	println(err.Error())
+	os.Exit(1)
+	return -1
 }
 
 func interpolateValue(val string) string {

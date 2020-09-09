@@ -8,9 +8,9 @@ RUN curl -Ls -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes
  && chmod +x /usr/local/bin/kubectl
 RUN curl -Ls https://kubernetes-helm.storage.googleapis.com/helm-v${HELM2_VERSION}-linux-amd64.tar.gz \
   | tar -C /usr/local/bin --strip-components=1 -xvzf - linux-amd64/helm && mv /usr/local/bin/helm /usr/local/bin/helm2
-RUN curl -Ls https://kubernetes-helm.storage.googleapis.com/helm-v${HELM3_VERSION}-linux-amd64.tar.gz \
-  | tar -C /usr/local/bin --strip-components=1 -xvzf - linux-amd64/helm && mv /usr/local/bin/helm /usr/local/bin/helm3 \
- && ln -sf /usr/local/bin/helm3 /usr/local/bin/helm
+RUN curl -Ls https://get.helm.sh/helm-v${HELM3_VERSION}-linux-amd64.tar.gz \
+    | tar -C /usr/local/bin --strip-components=1 -xvzf - linux-amd64/helm && mv /usr/local/bin/helm /usr/local/bin/helm3 \
+    && ln -sf /usr/local/bin/helm3 /usr/local/bin/helm
 RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz \
   | tar -C /usr/local -xzf -
 ENV PATH=/usr/local/bin:/usr/local/google-cloud-sdk/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin

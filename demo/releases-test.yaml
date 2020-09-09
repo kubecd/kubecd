@@ -1,5 +1,7 @@
 releases:
   - name: test-demo
+    helmVersion:
+      path: helm3
     chart:
       dir: charts/demo-app
     trigger:

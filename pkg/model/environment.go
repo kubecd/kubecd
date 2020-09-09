@@ -34,7 +34,8 @@ type Environment struct {
 	Releases          []*Release   `json:"releases,omitempty"`
 	Cluster           *Cluster     `json:"-"`
 
-	fromFile string
+	fromFile    string
+	helmVersion HelmVersion
 }
 
 func NewEnvironment(reader io.Reader, envFile string) (*Environment, error) {

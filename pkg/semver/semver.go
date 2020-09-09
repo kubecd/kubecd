@@ -36,6 +36,9 @@ func IsSemver(version string) bool {
 }
 
 func Normalize(version string) string {
+	if len(version) > 8 && version[0:8] == "Client: " {
+		version = version[9:]
+	}
 	if len(version) > 0 && version[0] == 'v' {
 		return version[1:]
 	}

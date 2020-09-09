@@ -36,6 +36,7 @@ type Release struct {
 	Triggers          []ReleaseUpdateTrigger `json:"triggers,omitempty"`
 	SkipDefaultValues bool                   `json:"skipDefaultValues,omitempty"`
 	ResourceFiles     []string               `json:"resourceFiles,omitempty"`
+	HelmVersion       *HelmVersion           `json:"helmVersion,omitempty"`
 
 	FromFile    string       `json:"-"`
 	Environment *Environment `json:"-"`
@@ -85,6 +86,10 @@ func NewReleaseList(env *Environment, reader io.Reader, fromFile string) (*Relea
 	for _, release := range releaseList.Releases {
 		release.FromFile = fromFile
 		release.Environment = env
+
+		if release.HelmVersion == nil {
+			release.HelmVersion = &env.helmVersion
+		}
 	}
 	return releaseList, nil
 }

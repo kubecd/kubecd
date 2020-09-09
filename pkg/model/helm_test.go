@@ -19,10 +19,16 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"os/exec"
 	"strconv"
 	"testing"
 )
+
+var mockedExitStatus = 0
+var mockedStdout string
 
 func TestChartValue_UnmarshalJSON(t *testing.T) {
 	var cv1, cv2 ChartValue
@@ -30,6 +36,52 @@ func TestChartValue_UnmarshalJSON(t *testing.T) {
 	assert.Equal(t, "bar", cv1.Value)
 	assert.NoError(t, json.Unmarshal([]byte(`{"key": "foo", "value": 42}`), &cv2))
 	assert.Equal(t, "42", cv2.Value)
+}
+
+func fakeExecCommand(command string, args ...string) *exec.Cmd {
+	cs := []string{"-test.run=TestExecCommandHelper", "--", command}
+	cs = append(cs, args...)
+	cmd := exec.Command(os.Args[0], cs...)
+	es := strconv.Itoa(mockedExitStatus)
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1",
+		"STDOUT=" + mockedStdout,
+		"EXIT_STATUS=" + es}
+	return cmd
+}
+
+func TestExecCommandHelper(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		return
+	}
+
+	// println("Mocked stdout:", os.Getenv("STDOUT"))
+	fmt.Fprintf(os.Stdout, os.Getenv("STDOUT"))
+	i, _ := strconv.Atoi(os.Getenv("EXIT_STATUS"))
+	os.Exit(i)
+}
+
+func TestHelmVersion_GetMajorVersion(t *testing.T) {
+	execCommand = fakeExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	mockedExitStatus = 0
+	mockedStdout = "v3.3.0+g8a4aeec"
+
+	assert.Equal(t, 3, HelmVersion{Path: "helm"}.GetMajorVersion())
+
+	mockedExitStatus = 0
+	mockedStdout = "v2.3.0+g8a4aeec"
+
+	assert.Equal(t, 2, HelmVersion{Path: "helm"}.GetMajorVersion())
+
+	mockedExitStatus = 0
+	mockedStdout = "1.3.0+asdasd"
+
+	assert.Equal(t, 1, HelmVersion{Path: "helm"}.GetMajorVersion())
+
+	mockedExitStatus = 0
+	mockedStdout = "Client: v2.9.1+g20adb27"
+	assert.Equal(t, 2, HelmVersion{Path: "helm"}.GetMajorVersion())
 }
 
 func TestFlexString_UnmarshalJSON(t *testing.T) {
