@@ -24,10 +24,10 @@ dockers:
     binaries:
       - kcd
     image_templates:
-      - "zedge/kubecd:latest"
-      - "zedge/kubecd:{{ .Version }}"
-      - "zedge/kubecd:{{ .Major }}.{{ .Minor }}"
-      - "zedge/kubecd:{{ .Major }}"
+      - "ghcr.io/kubecd/kubecd:latest"
+      - "ghcr.io/kubecd/kubecd:{{ .Version }}"
+      - "ghcr.io/kubecd/kubecd:{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/kubecd/kubecd:{{ .Major }}"
     build_flag_templates:
       - "--label=org.label-schema.schema-version=1.0"
       - "--label=org.label-schema.version={{.Version}}"
