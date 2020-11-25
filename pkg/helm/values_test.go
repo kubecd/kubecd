@@ -25,6 +25,7 @@ import (
 	"github.com/kubecd/kubecd/pkg/semver"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path"
 	"testing"
 )
 
@@ -100,8 +101,8 @@ func TestGenerateHelmApplyArgv(t *testing.T) {
 	chartRef := "stable/cert-manager"
 	chartVer := "v0.5.1"
 	valuesFile := "values-certmanager.yaml"
-	releaseFile := "/tmp/releases.yaml"
-	expectedValuesFile := "/tmp/" + valuesFile
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	expectedValuesFile := path.Join(os.TempDir(), valuesFile)
 	releaseName := "cert-manager"
 	envName := "kube-system"
 	envNamespace := "kube-system"
@@ -133,7 +134,7 @@ func TestGenerateHelmApplyArgv(t *testing.T) {
 
 	})
 	t.Run("env and release values files", func(t *testing.T) {
-		env.DefaultValuesFile = "/tmp/env-values.yaml"
+		env.DefaultValuesFile = path.Join(os.TempDir(), "env-values.yaml")
 		cmds, err := GenerateHelmApplyArgv(release, env, false, false)
 		assert.NoError(t, err)
 		assert.Equal(t,
@@ -185,8 +186,8 @@ func TestGenerateTemplateCommands(t *testing.T) {
 	chartRef := "stable/cert-manager"
 	chartVer := "v0.5.1"
 	valuesFile := "values-certmanager.yaml"
-	releaseFile := "/tmp/releases.yaml"
-	expectedValuesFile := "/tmp/" + valuesFile
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	expectedValuesFile := path.Join(os.TempDir(), valuesFile)
 	releaseName := "cert-manager"
 	envName := "kube-system"
 	envNamespace := "kube-system"
@@ -207,7 +208,7 @@ func TestGenerateTemplateCommands(t *testing.T) {
 		KubeNamespace: envNamespace,
 	}
 
-	tmpDir := fmt.Sprintf("/tmp/kcd-template.%d", os.Getpid())
+	tmpDir := path.Join(os.TempDir(), fmt.Sprintf("kcd-template.%d", os.Getpid()))
 
 	t.Run("generate template commands", func(t *testing.T) {
 		cmds, err := GenerateTemplateCommands(release, env)
