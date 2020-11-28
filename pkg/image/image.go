@@ -163,7 +163,6 @@ func GetTagsForDockerV2RegistryImage(repo *DockerImageRef) ([]TimestampedTag, er
 			if err = json.Unmarshal([]byte(manifest.History[0].V1Compatibility), &v1Compat); err != nil {
 				return nil, fmt.Errorf(`could not decode tag timestamp for %s:%s: %v`, repo.WithoutTag(), tag, err)
 			}
-			//timestamp, err := time.Parse("2006-01-02T15:04:05.999999999Z", v1Compat.Created)
 			timestamp, err := ParseDockerTimestamp(v1Compat.Created)
 			if err != nil {
 				return nil, fmt.Errorf(`could not parse timestamp for %s:%s: %v`, repo.WithoutTag(), tag, err)

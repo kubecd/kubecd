@@ -1,17 +1,8 @@
-KCD_IMAGE=zedge/kubecd
-KCD_IMAGE_TAG=latest
-
 .PHONY: all build image image-push clean test fmt
 .DEFAULT: build
 
 build:
 	go build -ldflags "-w -s -X main.version=$$(git describe --tags)" ./cmd/kcd
-
-image:
-	docker build -t $(KCD_IMAGE):$(KCD_IMAGE_TAG) .
-
-image-push: image
-	docker push $(KCD_IMAGE):$(KCD_IMAGE_TAG)
 
 clean:
 	go clean ./...

@@ -92,7 +92,7 @@ func TestNewDockerImageRef(t *testing.T) {
 	for _, tc := range []testCase{
 		{expected: DockerImageRef{Registry: "eu.gcr.io", Image: "kubecd-demo/prod-demo-app", Tag: "v1.1"}, image: "eu.gcr.io/kubecd-demo/prod-demo-app:v1.1"},
 		{expected: DockerImageRef{Registry: "eu.gcr.io", Image: "kubecd-demo/prod-demo-app", Tag: ""}, image: "eu.gcr.io/kubecd-demo/prod-demo-app"},
-		{expected: DockerImageRef{Registry: DefaultDockerRegistry, Image: "zedge/kubecd", Tag: "latest"}, image: "zedge/kubecd:latest"},
+		{expected: DockerImageRef{Registry: DefaultDockerRegistry, Image: "kubecd/kubecd", Tag: "latest"}, image: "kubecd/kubecd:latest"},
 	} {
 		ref := NewDockerImageRef(tc.image)
 		assert.Equal(t, tc.expected, *ref)
