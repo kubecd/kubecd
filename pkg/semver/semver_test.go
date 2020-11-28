@@ -1,5 +1,6 @@
 /*
- * Copyright 2018-2020 Zedge, Inc.
+ * Copyright 2018-2019 Zedge, Inc.
+ * Copyright 2019-2020 Stig Sæther Nordahl Bakken
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

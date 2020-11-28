@@ -8,12 +8,6 @@
 environments, manage image upgrade strategies per service, and make it so. It supports any Kubernetes installation
 with some help, but has direct support for GKE or Azure, minikube and Docker, and deployment using [Helm](https://helm.sh) or plain kubectl.
 
-Currently, `kubecd` does not implement an operator/controller, but instead integrates directly with
-command-line tools. An operator is being planned, but we want to see where
-[Helm 3](https://github.com/helm/community/tree/master/helm-v3/) and the
-[Application CRD](https://github.com/kubernetes-sigs/application) is going first.
-
-
 ## Goals
 
  * Provide a mechanism for defining "environments", which are namespaces in clusters,
