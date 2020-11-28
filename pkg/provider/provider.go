@@ -35,6 +35,7 @@ type baseClusterProvider struct {
 
 func GetClusterProvider(cluster *model.Cluster, gitlabMode bool) (ClusterProvider, error) {
 	var provider ClusterProvider
+	var err error
 	switch {
 	case gitlabMode:
 		provider = &GitlabClusterProvider{baseClusterProvider{cluster}}
@@ -46,6 +47,10 @@ func GetClusterProvider(cluster *model.Cluster, gitlabMode bool) (ClusterProvide
 		provider = &MinikubeClusterProvider{baseClusterProvider{cluster}}
 	case cluster.Provider.DockerForDesktop != nil:
 		provider = &DockerForDesktopClusterProvider{baseClusterProvider{cluster}}
+	case cluster.Provider.ExistingContext != nil:
+		if provider, err = NewExistingContextClusterProvider(baseClusterProvider{cluster}); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf(`could not find a provider for cluster %q`, cluster.Name)
 	}

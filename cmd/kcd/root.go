@@ -112,8 +112,13 @@ func runCommand(dryRun, disableColors bool, argv []string) error {
 		_, _ = colorstring.Fprintf(os.Stderr, "[yellow]%s\n", printCmd)
 	}
 
-	if !dryRun {
-		cmd := exec.Command(argv[0], argv[1:]...)
+	if !dryRun && len(argv) > 0 {
+		var cmd *exec.Cmd
+		if len(argv) == 1 {
+			cmd = exec.Command(argv[0])
+		} else {
+			cmd = exec.Command(argv[0], argv[1:]...)
+		}
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
