@@ -26,6 +26,7 @@ dockers:
       - "ghcr.io/kubecd/kubecd:{{ .Major }}.{{ .Minor }}"
       - "ghcr.io/kubecd/kubecd:{{ .Major }}"
     build_flag_templates:
+      - "--network=host"
       - "--label=org.label-schema.schema-version=1.0"
       - "--label=org.label-schema.version={{.Version}}"
       - "--label=org.label-schema.name={{.ProjectName}}"
