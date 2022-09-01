@@ -18,7 +18,7 @@ builds:
 dockers:
   - goos: linux
     goarch: amd64
-    binaries:
+    ids:
       - kcd
     image_templates:
       - "ghcr.io/kubecd/kubecd:latest"
@@ -55,7 +55,7 @@ release:
   draft: false
   disable: false
 brews:
-  - github:
+  - tap:
       owner: kubecd
       name: homebrew-kubecd
     commit_author:
