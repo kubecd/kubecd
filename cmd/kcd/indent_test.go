@@ -19,6 +19,7 @@
 package main
 
 import (
+	"bytes"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 	"testing"
@@ -67,7 +68,10 @@ releases:
       - key: image.tag
         value: "v1.1"
 `
-	buf, err := yaml.Marshal(&doc)
+	buf := bytes.Buffer{}
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	err := enc.Encode(&doc)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, string(buf))
+	assert.Equal(t, expected, buf.String())
 }
