@@ -26,15 +26,31 @@ import (
 )
 
 func TestGenerateBuildCommand(t *testing.T) {
-	rel := &model.Release{
-		Name:          "my-app",
-		Kustomization: &model.Kustomization{Path: "./overlays/prod"},
-		FromFile:      "/path/to/releases.yaml",
-	}
+	t.Run("valid release", func(t *testing.T) {
+		rel := &model.Release{
+			Name:          "my-app",
+			Kustomization: &model.Kustomization{Path: "./overlays/prod"},
+			FromFile:      "/path/to/releases.yaml",
+		}
 
-	cmd := GenerateBuildCommand(rel)
+		cmd := GenerateBuildCommand(rel)
 
-	assert.Equal(t, []string{"kustomize", "build", "/path/to/overlays/prod"}, cmd)
+		assert.Equal(t, []string{"kustomize", "build", "/path/to/overlays/prod"}, cmd)
+	})
+
+	t.Run("nil release", func(t *testing.T) {
+		cmd := GenerateBuildCommand(nil)
+		assert.Nil(t, cmd)
+	})
+
+	t.Run("release without kustomization", func(t *testing.T) {
+		rel := &model.Release{
+			Name:     "my-app",
+			FromFile: "/path/to/releases.yaml",
+		}
+		cmd := GenerateBuildCommand(rel)
+		assert.Nil(t, cmd)
+	})
 }
 
 func TestGenerateApplyCommand(t *testing.T) {
@@ -68,6 +84,20 @@ func TestGenerateApplyCommand(t *testing.T) {
 		}
 		assert.Equal(t, expected, cmd)
 	})
+
+	t.Run("nil release", func(t *testing.T) {
+		cmd := GenerateApplyCommand(nil, env, false)
+		assert.Nil(t, cmd)
+	})
+
+	t.Run("release without kustomization", func(t *testing.T) {
+		relNoKust := &model.Release{
+			Name:     "my-app",
+			FromFile: "/path/to/releases.yaml",
+		}
+		cmd := GenerateApplyCommand(relNoKust, env, false)
+		assert.Nil(t, cmd)
+	})
 }
 
 func TestGenerateTemplateCommands(t *testing.T) {
@@ -81,11 +111,27 @@ func TestGenerateTemplateCommands(t *testing.T) {
 		KubeNamespace: "default",
 	}
 
-	cmds := GenerateTemplateCommands(rel, env)
+	t.Run("valid release", func(t *testing.T) {
+		cmds := GenerateTemplateCommands(rel, env)
 
-	assert.Len(t, cmds, 4)
-	assert.Equal(t, []string{"echo", "---"}, cmds[0])
-	assert.Equal(t, []string{"echo", "#", "Kustomization:", "/path/to/overlays/prod"}, cmds[1])
-	assert.Equal(t, []string{"kustomize", "build", "/path/to/overlays/prod"}, cmds[2])
-	assert.Equal(t, []string{"echo", "---"}, cmds[3])
+		assert.Len(t, cmds, 4)
+		assert.Equal(t, []string{"echo", "---"}, cmds[0])
+		assert.Equal(t, []string{"echo", "#", "Kustomization:", "/path/to/overlays/prod"}, cmds[1])
+		assert.Equal(t, []string{"kustomize", "build", "/path/to/overlays/prod"}, cmds[2])
+		assert.Equal(t, []string{"echo", "---"}, cmds[3])
+	})
+
+	t.Run("nil release", func(t *testing.T) {
+		cmds := GenerateTemplateCommands(nil, env)
+		assert.Nil(t, cmds)
+	})
+
+	t.Run("release without kustomization", func(t *testing.T) {
+		relNoKust := &model.Release{
+			Name:     "my-app",
+			FromFile: "/path/to/releases.yaml",
+		}
+		cmds := GenerateTemplateCommands(relNoKust, env)
+		assert.Nil(t, cmds)
+	})
 }

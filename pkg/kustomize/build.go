@@ -23,13 +23,21 @@ import (
 )
 
 // GenerateBuildCommand generates the kustomize build command for a release.
+// The release must have a non-nil Kustomization field.
 func GenerateBuildCommand(rel *model.Release) []string {
+	if rel == nil || rel.Kustomization == nil {
+		return nil
+	}
 	kustomizePath := rel.AbsPath(rel.Kustomization.Path)
 	return []string{"kustomize", "build", kustomizePath}
 }
 
 // GenerateApplyCommand generates the kubectl apply -k command for kustomize releases.
+// The release must have a non-nil Kustomization field.
 func GenerateApplyCommand(rel *model.Release, env *model.Environment, dryRun bool) []string {
+	if rel == nil || rel.Kustomization == nil {
+		return nil
+	}
 	kustomizePath := rel.AbsPath(rel.Kustomization.Path)
 	cmd := []string{"kubectl", "--context", model.KubeContextName(env.Name), "apply", "-k", kustomizePath}
 	if dryRun {
@@ -40,7 +48,11 @@ func GenerateApplyCommand(rel *model.Release, env *model.Environment, dryRun boo
 }
 
 // GenerateTemplateCommands generates commands to show kustomize output.
+// The release must have a non-nil Kustomization field.
 func GenerateTemplateCommands(rel *model.Release, env *model.Environment) [][]string {
+	if rel == nil || rel.Kustomization == nil {
+		return nil
+	}
 	kustomizePath := rel.AbsPath(rel.Kustomization.Path)
 	return [][]string{
 		{"echo", "---"},
