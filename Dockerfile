@@ -1,6 +1,6 @@
-FROM debian:buster-slim
-ARG KUBECTL_VERSION=1.19.4
-ARG HELM_VERSION=3.4.1
+FROM debian:bookworm-slim
+ARG KUBECTL_VERSION=1.30.0
+ARG HELM_VERSION=3.17.0
 RUN apt-get update && apt-get install -y openssh-client git procps curl && apt-get clean
 RUN curl -Ls -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl \
  && chmod +x /usr/local/bin/kubectl
