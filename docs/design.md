@@ -109,6 +109,8 @@ to describe an [installation of a chart](https://github.com/kubernetes/helm/blob
 with a release name and extra config values.
 
 KubeCD builds on this concept by defining a "release" as a named Helm release along with its values.
+KubeCD also supports [Kustomize](#kustomize) releases for deploying Kubernetes resources using
+kustomize overlays.
 
 In addition, KubeCD releases also have an [image upgrade trigger](#upgrade-triggers).
 
@@ -301,6 +303,48 @@ Auto-patching is done in a way that preserves comments and field
 order, but may reindent the yaml. To prevent noisy whitespace changes
 in upgrade commits, canonically indent files with `kcd indent` and
 commit whitespace-only changes.
+
+
+## Kustomize
+
+KubeCD supports deploying Kubernetes resources using [Kustomize](https://kustomize.io/).
+This is modeled after [Flux's kustomization API](https://fluxcd.io/flux/components/kustomize/kustomizations/).
+
+### Kustomize Release Example
+
+```yaml
+releases:
+  - name: my-app
+    kustomization:
+      path: ./overlays/production
+```
+
+The `kustomization` field specifies a path to a directory containing a `kustomization.yaml` file.
+This path is relative to the release file location.
+
+When applying kustomize releases, KubeCD uses `kubectl apply -k` to apply the rendered manifests.
+When rendering (with `kcd render`), KubeCD uses `kustomize build` to show the rendered output.
+
+### Kustomize Directory Structure
+
+A typical kustomize structure consists of a base directory with common resources and overlay
+directories for environment-specific customizations:
+
+```
+kustomize-demo/
+├── base/
+│   ├── kustomization.yaml
+│   ├── deployment.yaml
+│   └── service.yaml
+└── overlays/
+    ├── test/
+    │   └── kustomization.yaml
+    └── prod/
+        └── kustomization.yaml
+```
+
+Each overlay's `kustomization.yaml` references the base and applies environment-specific
+patches, replicas, or other customizations.
 
 
 ## References

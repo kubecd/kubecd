@@ -1,2 +1,5 @@
-releases: []
-
+releases:
+  # Example kustomization release for the test environment
+  - name: demo-app
+    kustomization:
+      path: ../kustomize-demo/overlays/test

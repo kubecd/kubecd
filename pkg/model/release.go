@@ -31,6 +31,7 @@ import (
 type Release struct {
 	Name              string                 `json:"name"`
 	Chart             *Chart                 `json:"chart,omitempty"`
+	Kustomization     *Kustomization         `json:"kustomization,omitempty"`
 	ValuesFile        *string                `json:"valuesFile,omitempty"`
 	Values            []ChartValue           `json:"values,omitempty"`
 	Trigger           *ReleaseUpdateTrigger  `json:"trigger,omitempty"`
@@ -92,15 +93,32 @@ func NewReleaseList(env *Environment, reader io.Reader, fromFile string) (*Relea
 
 func (r *Release) sanityCheck() []error {
 	var issues []error
-	if r.Chart == nil && (r.ResourceFiles == nil || len(r.ResourceFiles) == 0) {
-		issues = append(issues, fmt.Errorf(`release %q: must define either "chart" or "resourceFiles"`, r.Name))
-	}
+	definedTypes := 0
 	if r.Chart != nil {
-		if r.ResourceFiles != nil && len(r.ResourceFiles) > 0 {
-			issues = append(issues, fmt.Errorf(`release %q: must define only one of "chart" or "resourceFiles"`, r.Name))
-		}
+		definedTypes++
+	}
+	if r.Kustomization != nil {
+		definedTypes++
+	}
+	if r.ResourceFiles != nil && len(r.ResourceFiles) > 0 {
+		definedTypes++
+	}
+
+	if definedTypes == 0 {
+		issues = append(issues, fmt.Errorf(`release %q: must define one of "chart", "kustomization", or "resourceFiles"`, r.Name))
+	}
+	if definedTypes > 1 {
+		issues = append(issues, fmt.Errorf(`release %q: must define only one of "chart", "kustomization", or "resourceFiles"`, r.Name))
+	}
+
+	if r.Chart != nil {
 		if r.Chart.Reference != nil && r.Chart.Version == nil {
 			issues = append(issues, fmt.Errorf(`release %q: must have a chart.version`, r.Name))
+		}
+	}
+	if r.Kustomization != nil {
+		if r.Kustomization.Path == "" {
+			issues = append(issues, fmt.Errorf(`release %q: kustomization must have a path`, r.Name))
 		}
 	}
 	return issues

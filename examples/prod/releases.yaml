@@ -1,2 +1,5 @@
-releases: []
-
+releases:
+  # Example kustomization release for the production environment
+  - name: demo-app
+    kustomization:
+      path: ../kustomize-demo/overlays/prod

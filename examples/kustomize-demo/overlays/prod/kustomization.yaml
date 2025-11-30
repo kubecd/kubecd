@@ -1,0 +1,12 @@
+# Production environment overlay
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+namePrefix: prod-
+
+replicas:
+  - name: demo-app
+    count: 3

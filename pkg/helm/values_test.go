@@ -217,3 +217,74 @@ func TestGenerateTemplateCommands(t *testing.T) {
 		assert.Equal(t, [][]string{{"mkdir", "-m", "700", "-p", tmpDir}, {"helm", "fetch", chartRef, "--version", chartVer, "--untar", "--untardir", tmpDir}, {"helm", "--kube-context", "env:" + envName, "template", tmpDir + "/" + releaseName, "-n", releaseName, "--namespace", envNamespace, "--values", expectedValuesFile}, {"rm", "-rf", tmpDir}}, cmds)
 	})
 }
+
+func TestDeployCommandsWithKustomization(t *testing.T) {
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	kustomizePath := path.Join(os.TempDir(), "overlays/test")
+	envName := "test-env"
+	envNamespace := "default"
+
+	release := &model.Release{
+		Name:          "kustomize-app",
+		Kustomization: &model.Kustomization{Path: "./overlays/test"},
+		FromFile:      releaseFile,
+	}
+
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+		Releases:      []*model.Release{release},
+	}
+
+	t.Run("deploy kustomization release", func(t *testing.T) {
+		cmds, err := DeployCommands(env, false, false, nil)
+		assert.NoError(t, err)
+		assert.Len(t, cmds, 1)
+		assert.Equal(t, []string{
+			"kubectl", "--context", "env:" + envName,
+			"apply", "-k", kustomizePath,
+			"--namespace", envNamespace,
+		}, cmds[0])
+	})
+
+	t.Run("deploy kustomization release with dry-run", func(t *testing.T) {
+		cmds, err := DeployCommands(env, true, false, nil)
+		assert.NoError(t, err)
+		assert.Len(t, cmds, 1)
+		assert.Equal(t, []string{
+			"kubectl", "--context", "env:" + envName,
+			"apply", "-k", kustomizePath,
+			"--dry-run=client",
+			"--namespace", envNamespace,
+		}, cmds[0])
+	})
+}
+
+func TestTemplateCommandsWithKustomization(t *testing.T) {
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	kustomizePath := path.Join(os.TempDir(), "overlays/test")
+	envName := "test-env"
+	envNamespace := "default"
+
+	release := &model.Release{
+		Name:          "kustomize-app",
+		Kustomization: &model.Kustomization{Path: "./overlays/test"},
+		FromFile:      releaseFile,
+	}
+
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+		Releases:      []*model.Release{release},
+	}
+
+	t.Run("template kustomization release", func(t *testing.T) {
+		cmds, err := TemplateCommands(env, nil)
+		assert.NoError(t, err)
+		assert.Len(t, cmds, 4)
+		assert.Equal(t, []string{"echo", "---"}, cmds[0])
+		assert.Equal(t, []string{"echo", "#", "Kustomization:", kustomizePath}, cmds[1])
+		assert.Equal(t, []string{"kustomize", "build", kustomizePath}, cmds[2])
+		assert.Equal(t, []string{"echo", "---"}, cmds[3])
+	})
+}
