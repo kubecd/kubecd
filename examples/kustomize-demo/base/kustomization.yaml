@@ -1,0 +1,10 @@
+# Base kustomization for the demo application
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+
+commonLabels:
+  app: demo-app

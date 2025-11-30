@@ -32,6 +32,7 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/kubecd/kubecd/pkg/image"
+	"github.com/kubecd/kubecd/pkg/kustomize"
 
 	"github.com/kubecd/kubecd/pkg/exec"
 	"github.com/kubecd/kubecd/pkg/model"
@@ -148,6 +149,8 @@ func DeployCommands(env *model.Environment, dryRun, debug bool, limitToReleases 
 					return nil, err
 				}
 				commands = append(commands, tmp)
+			} else if release.Kustomization != nil {
+				commands = append(commands, kustomize.GenerateApplyCommand(release, env, dryRun))
 			} else if release.ResourceFiles != nil {
 				absFiles := make([]string, len(release.ResourceFiles))
 				for i, path := range release.ResourceFiles {
@@ -176,6 +179,8 @@ func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]str
 					return nil, err
 				}
 				commands = append(commands, tmp...)
+			} else if release.Kustomization != nil {
+				commands = append(commands, kustomize.GenerateTemplateCommands(release, env)...)
 			} else if release.ResourceFiles != nil {
 				for _, resourceFile := range release.ResourceFiles {
 					commands = append(commands,
