@@ -1,14 +1,20 @@
-.PHONY: all build build-all image image-push clean test fmt
+.PHONY: all build image image-multiarch image-push clean test fmt
 .DEFAULT: build
 
-GOARCH ?= $(shell go env GOARCH)
+IMAGE_NAME ?= kubecd/kubecd
+IMAGE_TAG ?= latest
 
 build:
-	GOARCH=$(GOARCH) go build -ldflags "-w -s -X main.version=$$(git describe --tags)" ./cmd/kcd
+	go build -ldflags "-w -s -X main.version=$$(git describe --tags)" ./cmd/kcd
 
-build-all:
-	GOARCH=amd64 go build -ldflags "-w -s -X main.version=$$(git describe --tags)" -o kcd-linux-amd64 ./cmd/kcd
-	GOARCH=arm64 go build -ldflags "-w -s -X main.version=$$(git describe --tags)" -o kcd-linux-arm64 ./cmd/kcd
+image:
+	docker buildx build -t $(IMAGE_NAME):$(IMAGE_TAG) --load .
+
+image-multiarch:
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(IMAGE_NAME):$(IMAGE_TAG) .
+
+image-push:
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(IMAGE_NAME):$(IMAGE_TAG) --push .
 
 clean:
 	go clean ./...
