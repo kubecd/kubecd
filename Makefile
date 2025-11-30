@@ -1,8 +1,14 @@
-.PHONY: all build image image-push clean test fmt
+.PHONY: all build build-all image image-push clean test fmt
 .DEFAULT: build
 
+GOARCH ?= $(shell go env GOARCH)
+
 build:
-	go build -ldflags "-w -s -X main.version=$$(git describe --tags)" ./cmd/kcd
+	GOARCH=$(GOARCH) go build -ldflags "-w -s -X main.version=$$(git describe --tags)" ./cmd/kcd
+
+build-all:
+	GOARCH=amd64 go build -ldflags "-w -s -X main.version=$$(git describe --tags)" -o kcd-linux-amd64 ./cmd/kcd
+	GOARCH=arm64 go build -ldflags "-w -s -X main.version=$$(git describe --tags)" -o kcd-linux-arm64 ./cmd/kcd
 
 clean:
 	go clean ./...
