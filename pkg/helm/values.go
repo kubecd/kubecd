@@ -116,6 +116,14 @@ func KubectlApplyCommand(resourceFiles []string, dryRun bool, envName string) []
 	return cmd
 }
 
+func KubectlDiffCommand(resourceFiles []string, envName string) []string {
+	cmd := []string{"kubectl", "--context", model.KubeContextName(envName), "diff"}
+	for _, file := range resourceFiles {
+		cmd = append(cmd, "-f", file)
+	}
+	return cmd
+}
+
 const (
 	DryRun   = true
 	NoDryRun = false
@@ -184,6 +192,34 @@ func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]str
 						[]string{"cat", model.ResolvePathFromFile(resourceFile, relFile)},
 						[]string{"echo", "---"})
 				}
+			}
+		}
+	}
+	return commands, nil
+}
+
+func DiffCommands(env *model.Environment, limitToReleases []string) ([][]string, error) {
+	var commands [][]string
+	for _, releaseName := range limitToReleases {
+		if env.GetRelease(releaseName) == nil {
+			return nil, fmt.Errorf(`env %q: release not found: %q`, env.Name, releaseName)
+		}
+	}
+	for _, release := range env.AllReleases() {
+		if len(limitToReleases) == 0 || stringInSlice(release.Name, limitToReleases) {
+			relFile := release.FromFile
+			if release.Chart != nil {
+				diffArgv, err := GenerateHelmDiffArgv(release, env)
+				if err != nil {
+					return nil, err
+				}
+				commands = append(commands, diffArgv)
+			} else if release.ResourceFiles != nil {
+				absFiles := make([]string, len(release.ResourceFiles))
+				for i, path := range release.ResourceFiles {
+					absFiles[i] = model.ResolvePathFromFile(path, relFile)
+				}
+				commands = append(commands, KubectlDiffCommand(absFiles, env.Name))
 			}
 		}
 	}
