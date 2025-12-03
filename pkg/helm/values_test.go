@@ -310,7 +310,7 @@ func TestDiffCommands(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, cmds, 1)
 		assert.Equal(t,
-			[]string{"helm", "--kube-context", "env:" + envName, "diff", "upgrade", "prometheus", chartRef, "--version", chartVer},
+			[]string{"helm", "--kube-context", model.KubeContextName(envName), "diff", "upgrade", "prometheus", chartRef, "--version", chartVer},
 			cmds[0])
 	})
 
@@ -332,7 +332,7 @@ func TestDiffCommands(t *testing.T) {
 		assert.Len(t, cmds, 1)
 		expectedFile := path.Join(os.TempDir(), "echo-app.yaml")
 		assert.Equal(t,
-			[]string{"kubectl", "--context", "env:" + envName, "diff", "-f", expectedFile},
+			[]string{"kubectl", "--context", model.KubeContextName(envName), "diff", "-f", expectedFile},
 			cmds[0])
 	})
 
