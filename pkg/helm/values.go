@@ -209,11 +209,11 @@ func DiffCommands(env *model.Environment, limitToReleases []string) ([][]string,
 		if len(limitToReleases) == 0 || stringInSlice(release.Name, limitToReleases) {
 			relFile := release.FromFile
 			if release.Chart != nil {
-				diffArgv, err := GenerateHelmDiffArgv(release, env)
+				diffCmd, err := GenerateHelmDiffCommand(release, env)
 				if err != nil {
 					return nil, err
 				}
-				commands = append(commands, diffArgv)
+				commands = append(commands, diffCmd)
 			} else if release.ResourceFiles != nil {
 				absFiles := make([]string, len(release.ResourceFiles))
 				for i, path := range release.ResourceFiles {
@@ -280,20 +280,49 @@ func GenerateHelmChartArgs(rel *model.Release) ([]string, error) {
 	return []string{*rel.Chart.Reference, "--version", *rel.Chart.Version}, nil
 }
 
-func GenerateHelmDiffArgv(rel *model.Release, env *model.Environment) ([]string, error) {
+// GenerateHelmGetManifestArgv generates the helm command to get the currently deployed manifest
+func GenerateHelmGetManifestArgv(rel *model.Release, env *model.Environment) []string {
 	argv := GenerateHelmBaseArgv(env)
-	argv = append(argv, "diff", "upgrade", rel.Name)
+	argv = append(argv, "get", "manifest", rel.Name, "--namespace", env.KubeNamespace)
+	return argv
+}
+
+// GenerateHelmTemplateArgv generates the helm command to template the release from local config
+func GenerateHelmTemplateArgv(rel *model.Release, env *model.Environment) ([]string, error) {
 	chartArgs, err := GenerateHelmChartArgs(rel)
 	if err != nil {
 		return []string{}, err
 	}
-	argv = append(argv, chartArgs...)
 	valueArgs, err := GenerateHelmValuesArgv(rel, env)
 	if err != nil {
 		return []string{}, err
 	}
+	argv := GenerateHelmBaseArgv(env)
+	argv = append(argv, "template", rel.Name)
+	argv = append(argv, chartArgs...)
+	argv = append(argv, "--namespace", env.KubeNamespace)
 	argv = append(argv, valueArgs...)
 	return argv, nil
+}
+
+// GenerateHelmDiffCommand generates a bash command that diffs the deployed manifest against the local template
+// using native helm commands (helm get manifest vs helm template) instead of the helm-diff plugin
+func GenerateHelmDiffCommand(rel *model.Release, env *model.Environment) ([]string, error) {
+	getManifestArgv := GenerateHelmGetManifestArgv(rel, env)
+	templateArgv, err := GenerateHelmTemplateArgv(rel, env)
+	if err != nil {
+		return []string{}, err
+	}
+
+	// Build bash command using process substitution to diff the two outputs
+	getManifestCmd := strings.Join(getManifestArgv, " ")
+	templateCmd := strings.Join(templateArgv, " ")
+
+	// Use diff with unified output and color, comparing deployed (get manifest) with local (template)
+	// Exit code 0 = no diff, 1 = diff found, 2 = error
+	bashCmd := fmt.Sprintf("diff --color=auto -u <(%s) <(%s) || true", getManifestCmd, templateCmd)
+
+	return []string{"bash", "-c", bashCmd}, nil
 }
 
 func GenerateTemplateCommands(rel *model.Release, env *model.Environment) ([][]string, error) {

@@ -218,7 +218,26 @@ func TestGenerateTemplateCommands(t *testing.T) {
 	})
 }
 
-func TestGenerateHelmDiffArgv(t *testing.T) {
+func TestGenerateHelmGetManifestArgv(t *testing.T) {
+	releaseName := "cert-manager"
+	envName := "kube-system"
+	envNamespace := "kube-system"
+	release := &model.Release{
+		Name: releaseName,
+	}
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+	}
+
+	argv := GenerateHelmGetManifestArgv(release, env)
+	assert.Equal(t, []string{
+		"helm", "--kube-context", model.KubeContextName(envName),
+		"get", "manifest", releaseName, "--namespace", envNamespace,
+	}, argv)
+}
+
+func TestGenerateHelmTemplateArgv(t *testing.T) {
 	chartRef := "stable/cert-manager"
 	chartVer := "v0.5.1"
 	valuesFile := "values-certmanager.yaml"
@@ -244,29 +263,64 @@ func TestGenerateHelmDiffArgv(t *testing.T) {
 		KubeNamespace: envNamespace,
 	}
 
-	t.Run("generate helm diff argv", func(t *testing.T) {
-		cmds, err := GenerateHelmDiffArgv(release, env)
+	t.Run("generate helm template argv", func(t *testing.T) {
+		argv, err := GenerateHelmTemplateArgv(release, env)
 		assert.NoError(t, err)
-		assert.Equal(t,
-			[]string{
-				"helm", "--kube-context", "env:" + envName, "diff", "upgrade", releaseName,
-				chartRef, "--version", chartVer,
-				"--values", expectedValuesFile},
-			cmds)
+		assert.Equal(t, []string{
+			"helm", "--kube-context", model.KubeContextName(envName),
+			"template", releaseName, chartRef, "--version", chartVer,
+			"--namespace", envNamespace, "--values", expectedValuesFile,
+		}, argv)
 	})
 
 	t.Run("with env default values", func(t *testing.T) {
 		env.DefaultValues = []model.ChartValue{{Key: "foo", Value: "bar"}}
-		cmds, err := GenerateHelmDiffArgv(release, env)
+		argv, err := GenerateHelmTemplateArgv(release, env)
 		assert.NoError(t, err)
-		assert.Equal(t,
-			[]string{
-				"helm", "--kube-context", "env:" + envName, "diff", "upgrade", releaseName,
-				chartRef, "--version", chartVer,
-				"--set-string", "foo=bar", "--values", expectedValuesFile},
-			cmds)
+		assert.Equal(t, []string{
+			"helm", "--kube-context", model.KubeContextName(envName),
+			"template", releaseName, chartRef, "--version", chartVer,
+			"--namespace", envNamespace, "--set-string", "foo=bar", "--values", expectedValuesFile,
+		}, argv)
 		env.DefaultValues = nil
 	})
+}
+
+func TestGenerateHelmDiffCommand(t *testing.T) {
+	chartRef := "stable/cert-manager"
+	chartVer := "v0.5.1"
+	valuesFile := "values-certmanager.yaml"
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	expectedValuesFile := path.Join(os.TempDir(), valuesFile)
+	releaseName := "cert-manager"
+	envName := "kube-system"
+	envNamespace := "kube-system"
+	release := &model.Release{
+		Name: releaseName,
+		Chart: &model.Chart{
+			Reference: &chartRef,
+			Version:   &chartVer,
+		},
+		ValuesFile: &valuesFile,
+		FromFile:   releaseFile,
+	}
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+	}
+
+	cmd, err := GenerateHelmDiffCommand(release, env)
+	assert.NoError(t, err)
+	assert.Len(t, cmd, 3)
+	assert.Equal(t, "bash", cmd[0])
+	assert.Equal(t, "-c", cmd[1])
+	// Check that the bash command contains both helm get manifest and helm template
+	assert.Contains(t, cmd[2], "helm --kube-context "+model.KubeContextName(envName)+" get manifest "+releaseName)
+	assert.Contains(t, cmd[2], "helm --kube-context "+model.KubeContextName(envName)+" template "+releaseName)
+	assert.Contains(t, cmd[2], chartRef)
+	assert.Contains(t, cmd[2], chartVer)
+	assert.Contains(t, cmd[2], expectedValuesFile)
+	assert.Contains(t, cmd[2], "diff")
 }
 
 func TestKubectlDiffCommand(t *testing.T) {
@@ -309,9 +363,12 @@ func TestDiffCommands(t *testing.T) {
 		cmds, err := DiffCommands(env, nil)
 		assert.NoError(t, err)
 		assert.Len(t, cmds, 1)
-		assert.Equal(t,
-			[]string{"helm", "--kube-context", model.KubeContextName(envName), "diff", "upgrade", "prometheus", chartRef, "--version", chartVer},
-			cmds[0])
+		// Verify it's a bash command with process substitution
+		assert.Equal(t, "bash", cmds[0][0])
+		assert.Equal(t, "-c", cmds[0][1])
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" get manifest prometheus")
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" template prometheus")
+		assert.Contains(t, cmds[0][2], "diff")
 	})
 
 	t.Run("kubectl resource files", func(t *testing.T) {
@@ -361,9 +418,11 @@ func TestDiffCommands(t *testing.T) {
 		cmds, err := DiffCommands(env, []string{"prometheus"})
 		assert.NoError(t, err)
 		assert.Len(t, cmds, 1)
-		assert.Equal(t,
-			[]string{"helm", "--kube-context", "env:" + envName, "diff", "upgrade", "prometheus", chartRef, "--version", chartVer},
-			cmds[0])
+		// Verify it's a bash command with process substitution
+		assert.Equal(t, "bash", cmds[0][0])
+		assert.Equal(t, "-c", cmds[0][1])
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" get manifest prometheus")
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" template prometheus")
 	})
 
 	t.Run("unknown release returns error", func(t *testing.T) {
