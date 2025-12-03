@@ -116,6 +116,14 @@ func KubectlApplyCommand(resourceFiles []string, dryRun bool, envName string) []
 	return cmd
 }
 
+func KubectlDiffCommand(resourceFiles []string, envName string) []string {
+	cmd := []string{"kubectl", "--context", model.KubeContextName(envName), "diff"}
+	for _, file := range resourceFiles {
+		cmd = append(cmd, "-f", file)
+	}
+	return cmd
+}
+
 const (
 	DryRun   = true
 	NoDryRun = false
@@ -190,6 +198,34 @@ func TemplateCommands(env *model.Environment, limitToReleases []string) ([][]str
 	return commands, nil
 }
 
+func DiffCommands(env *model.Environment, limitToReleases []string) ([][]string, error) {
+	var commands [][]string
+	for _, releaseName := range limitToReleases {
+		if env.GetRelease(releaseName) == nil {
+			return nil, fmt.Errorf(`env %q: release not found: %q`, env.Name, releaseName)
+		}
+	}
+	for _, release := range env.AllReleases() {
+		if len(limitToReleases) == 0 || stringInSlice(release.Name, limitToReleases) {
+			relFile := release.FromFile
+			if release.Chart != nil {
+				diffCmd, err := GenerateHelmDiffCommand(release, env)
+				if err != nil {
+					return nil, err
+				}
+				commands = append(commands, diffCmd)
+			} else if release.ResourceFiles != nil {
+				absFiles := make([]string, len(release.ResourceFiles))
+				for i, path := range release.ResourceFiles {
+					absFiles[i] = model.ResolvePathFromFile(path, relFile)
+				}
+				commands = append(commands, KubectlDiffCommand(absFiles, env.Name))
+			}
+		}
+	}
+	return commands, nil
+}
+
 func GenerateHelmBaseArgv(env *model.Environment) []string {
 	return []string{"helm", "--kube-context", model.KubeContextName(env.Name)}
 }
@@ -244,20 +280,49 @@ func GenerateHelmChartArgs(rel *model.Release) ([]string, error) {
 	return []string{*rel.Chart.Reference, "--version", *rel.Chart.Version}, nil
 }
 
-func GenerateHelmDiffArgv(rel *model.Release, env *model.Environment) ([]string, error) {
+// GenerateHelmGetManifestArgv generates the helm command to get the currently deployed manifest
+func GenerateHelmGetManifestArgv(rel *model.Release, env *model.Environment) []string {
 	argv := GenerateHelmBaseArgv(env)
-	argv = append(argv, "diff", "upgrade", rel.Name)
+	argv = append(argv, "get", "manifest", rel.Name, "--namespace", env.KubeNamespace)
+	return argv
+}
+
+// GenerateHelmTemplateArgv generates the helm command to template the release from local config
+func GenerateHelmTemplateArgv(rel *model.Release, env *model.Environment) ([]string, error) {
 	chartArgs, err := GenerateHelmChartArgs(rel)
 	if err != nil {
 		return []string{}, err
 	}
-	argv = append(argv, chartArgs...)
 	valueArgs, err := GenerateHelmValuesArgv(rel, env)
 	if err != nil {
 		return []string{}, err
 	}
+	argv := GenerateHelmBaseArgv(env)
+	argv = append(argv, "template", rel.Name)
+	argv = append(argv, chartArgs...)
+	argv = append(argv, "--namespace", env.KubeNamespace)
 	argv = append(argv, valueArgs...)
 	return argv, nil
+}
+
+// GenerateHelmDiffCommand generates a bash command that diffs the deployed manifest against the local template
+// using native helm commands (helm get manifest vs helm template) instead of the helm-diff plugin
+func GenerateHelmDiffCommand(rel *model.Release, env *model.Environment) ([]string, error) {
+	getManifestArgv := GenerateHelmGetManifestArgv(rel, env)
+	templateArgv, err := GenerateHelmTemplateArgv(rel, env)
+	if err != nil {
+		return []string{}, err
+	}
+
+	// Build bash command using process substitution to diff the two outputs
+	getManifestCmd := strings.Join(getManifestArgv, " ")
+	templateCmd := strings.Join(templateArgv, " ")
+
+	// Use diff with unified output and color, comparing deployed (get manifest) with local (template)
+	// Exit code 0 = no diff, 1 = diff found, 2 = error
+	bashCmd := fmt.Sprintf("diff --color=auto -u <(%s) <(%s) || true", getManifestCmd, templateCmd)
+
+	return []string{"bash", "-c", bashCmd}, nil
 }
 
 func GenerateTemplateCommands(rel *model.Release, env *model.Environment) ([][]string, error) {

@@ -217,3 +217,223 @@ func TestGenerateTemplateCommands(t *testing.T) {
 		assert.Equal(t, [][]string{{"mkdir", "-m", "700", "-p", tmpDir}, {"helm", "fetch", chartRef, "--version", chartVer, "--untar", "--untardir", tmpDir}, {"helm", "--kube-context", "env:" + envName, "template", tmpDir + "/" + releaseName, "-n", releaseName, "--namespace", envNamespace, "--values", expectedValuesFile}, {"rm", "-rf", tmpDir}}, cmds)
 	})
 }
+
+func TestGenerateHelmGetManifestArgv(t *testing.T) {
+	releaseName := "cert-manager"
+	envName := "kube-system"
+	envNamespace := "kube-system"
+	release := &model.Release{
+		Name: releaseName,
+	}
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+	}
+
+	argv := GenerateHelmGetManifestArgv(release, env)
+	assert.Equal(t, []string{
+		"helm", "--kube-context", model.KubeContextName(envName),
+		"get", "manifest", releaseName, "--namespace", envNamespace,
+	}, argv)
+}
+
+func TestGenerateHelmTemplateArgv(t *testing.T) {
+	chartRef := "stable/cert-manager"
+	chartVer := "v0.5.1"
+	valuesFile := "values-certmanager.yaml"
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	expectedValuesFile := path.Join(os.TempDir(), valuesFile)
+	releaseName := "cert-manager"
+	envName := "kube-system"
+	envNamespace := "kube-system"
+	release := &model.Release{
+		Name: releaseName,
+		Chart: &model.Chart{
+			Reference: &chartRef,
+			Version:   &chartVer,
+		},
+		ValuesFile: &valuesFile,
+		Triggers: []model.ReleaseUpdateTrigger{
+			{Chart: &model.HelmTrigger{Track: semver.TrackMinorVersion}},
+		},
+		FromFile: releaseFile,
+	}
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+	}
+
+	t.Run("generate helm template argv", func(t *testing.T) {
+		argv, err := GenerateHelmTemplateArgv(release, env)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{
+			"helm", "--kube-context", model.KubeContextName(envName),
+			"template", releaseName, chartRef, "--version", chartVer,
+			"--namespace", envNamespace, "--values", expectedValuesFile,
+		}, argv)
+	})
+
+	t.Run("with env default values", func(t *testing.T) {
+		env.DefaultValues = []model.ChartValue{{Key: "foo", Value: "bar"}}
+		argv, err := GenerateHelmTemplateArgv(release, env)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{
+			"helm", "--kube-context", model.KubeContextName(envName),
+			"template", releaseName, chartRef, "--version", chartVer,
+			"--namespace", envNamespace, "--set-string", "foo=bar", "--values", expectedValuesFile,
+		}, argv)
+		env.DefaultValues = nil
+	})
+}
+
+func TestGenerateHelmDiffCommand(t *testing.T) {
+	chartRef := "stable/cert-manager"
+	chartVer := "v0.5.1"
+	valuesFile := "values-certmanager.yaml"
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	expectedValuesFile := path.Join(os.TempDir(), valuesFile)
+	releaseName := "cert-manager"
+	envName := "kube-system"
+	envNamespace := "kube-system"
+	release := &model.Release{
+		Name: releaseName,
+		Chart: &model.Chart{
+			Reference: &chartRef,
+			Version:   &chartVer,
+		},
+		ValuesFile: &valuesFile,
+		FromFile:   releaseFile,
+	}
+	env := &model.Environment{
+		Name:          envName,
+		KubeNamespace: envNamespace,
+	}
+
+	cmd, err := GenerateHelmDiffCommand(release, env)
+	assert.NoError(t, err)
+	assert.Len(t, cmd, 3)
+	assert.Equal(t, "bash", cmd[0])
+	assert.Equal(t, "-c", cmd[1])
+	// Check that the bash command contains both helm get manifest and helm template
+	assert.Contains(t, cmd[2], "helm --kube-context "+model.KubeContextName(envName)+" get manifest "+releaseName)
+	assert.Contains(t, cmd[2], "helm --kube-context "+model.KubeContextName(envName)+" template "+releaseName)
+	assert.Contains(t, cmd[2], chartRef)
+	assert.Contains(t, cmd[2], chartVer)
+	assert.Contains(t, cmd[2], expectedValuesFile)
+	assert.Contains(t, cmd[2], "diff")
+}
+
+func TestKubectlDiffCommand(t *testing.T) {
+	t.Run("single file", func(t *testing.T) {
+		files := []string{"deployment.yaml"}
+		cmd := KubectlDiffCommand(files, "test-env")
+		assert.Equal(t, []string{"kubectl", "--context", "env:test-env", "diff", "-f", "deployment.yaml"}, cmd)
+	})
+
+	t.Run("multiple files", func(t *testing.T) {
+		files := []string{"deployment.yaml", "service.yaml"}
+		cmd := KubectlDiffCommand(files, "test-env")
+		assert.Equal(t, []string{"kubectl", "--context", "env:test-env", "diff", "-f", "deployment.yaml", "-f", "service.yaml"}, cmd)
+	})
+}
+
+func TestDiffCommands(t *testing.T) {
+	chartRef := "stable/prometheus"
+	chartVer := "v1.0.0"
+	releaseFile := path.Join(os.TempDir(), "releases.yaml")
+	envName := "test-env"
+	envNamespace := "default"
+
+	t.Run("helm chart release", func(t *testing.T) {
+		release := &model.Release{
+			Name: "prometheus",
+			Chart: &model.Chart{
+				Reference: &chartRef,
+				Version:   &chartVer,
+			},
+			FromFile: releaseFile,
+		}
+		env := &model.Environment{
+			Name:          envName,
+			KubeNamespace: envNamespace,
+			Releases:      []*model.Release{release},
+		}
+		release.Environment = env
+
+		cmds, err := DiffCommands(env, nil)
+		assert.NoError(t, err)
+		assert.Len(t, cmds, 1)
+		// Verify it's a bash command with process substitution
+		assert.Equal(t, "bash", cmds[0][0])
+		assert.Equal(t, "-c", cmds[0][1])
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" get manifest prometheus")
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" template prometheus")
+		assert.Contains(t, cmds[0][2], "diff")
+	})
+
+	t.Run("kubectl resource files", func(t *testing.T) {
+		release := &model.Release{
+			Name:          "echoserver",
+			ResourceFiles: []string{"echo-app.yaml"},
+			FromFile:      releaseFile,
+		}
+		env := &model.Environment{
+			Name:          envName,
+			KubeNamespace: envNamespace,
+			Releases:      []*model.Release{release},
+		}
+		release.Environment = env
+
+		cmds, err := DiffCommands(env, nil)
+		assert.NoError(t, err)
+		assert.Len(t, cmds, 1)
+		expectedFile := path.Join(os.TempDir(), "echo-app.yaml")
+		assert.Equal(t,
+			[]string{"kubectl", "--context", model.KubeContextName(envName), "diff", "-f", expectedFile},
+			cmds[0])
+	})
+
+	t.Run("limit to specific releases", func(t *testing.T) {
+		release1 := &model.Release{
+			Name: "prometheus",
+			Chart: &model.Chart{
+				Reference: &chartRef,
+				Version:   &chartVer,
+			},
+			FromFile: releaseFile,
+		}
+		release2 := &model.Release{
+			Name:          "echoserver",
+			ResourceFiles: []string{"echo-app.yaml"},
+			FromFile:      releaseFile,
+		}
+		env := &model.Environment{
+			Name:          envName,
+			KubeNamespace: envNamespace,
+			Releases:      []*model.Release{release1, release2},
+		}
+		release1.Environment = env
+		release2.Environment = env
+
+		cmds, err := DiffCommands(env, []string{"prometheus"})
+		assert.NoError(t, err)
+		assert.Len(t, cmds, 1)
+		// Verify it's a bash command with process substitution
+		assert.Equal(t, "bash", cmds[0][0])
+		assert.Equal(t, "-c", cmds[0][1])
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" get manifest prometheus")
+		assert.Contains(t, cmds[0][2], "helm --kube-context "+model.KubeContextName(envName)+" template prometheus")
+	})
+
+	t.Run("unknown release returns error", func(t *testing.T) {
+		env := &model.Environment{
+			Name:          envName,
+			KubeNamespace: envNamespace,
+			Releases:      []*model.Release{},
+		}
+
+		_, err := DiffCommands(env, []string{"unknown-release"})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "release not found")
+	})
+}
